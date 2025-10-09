@@ -1,9 +1,9 @@
 package ui
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
 	"gaufre/internal/http"
 	"gaufre/internal/types"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 
@@ -24,6 +24,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ResponseMsg:
 		m.Loading = false
 		m.Response = msg.Response
+		m.ShowResponse = true
+		return m, nil
 	}
 
 	return m, nil
@@ -36,9 +38,16 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	
 	case "enter":
-		if !m.Loading {
+		if m.ShowResponse {
+			m.ShowResponse = false
+			m.Response = nil
+			return m, nil
+		}
+
+		if m.SelectURL && !m.Loading {
 			m.Loading = true
 			m.Response = nil
+			m.ShowResponse = false
 			return m, makeRequest(m.URL)
 		}
 
@@ -75,7 +84,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.Cursor = len(m.URL) 
 
 	default:
-		if len(msg.String()) == 1 {
+		if m.SelectURL && len(msg.String()) == 1 {
 			m.URL = m.URL[:m.Cursor] + msg.String() + m.URL[m.Cursor:]
 			m.Cursor++
 		}

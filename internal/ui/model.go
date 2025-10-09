@@ -15,6 +15,7 @@ type Model struct {
 	Height int
 	SelectedMethod int
 	SelectURL bool
+	ShowResponse bool
 }
 
 func NewModel() Model {
@@ -24,6 +25,7 @@ func NewModel() Model {
 		Cursor: len(defaultURL),
 		SelectedMethod: 0,
 		SelectURL: false,
+		ShowResponse: false,
 	}
 }
 

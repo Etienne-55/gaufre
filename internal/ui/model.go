@@ -14,8 +14,12 @@ type Model struct {
 	Width int
 	Height int
 	SelectedMethod int
+	SelectedOperation string
 	SelectURL bool
 	ShowResponse bool
+	Payload string
+	PayloadCursor int
+	SelectPayload bool
 }
 
 func NewModel() Model {
@@ -26,6 +30,7 @@ func NewModel() Model {
 		SelectedMethod: 0,
 		SelectURL: false,
 		ShowResponse: false,
+		SelectPayload: false,
 	}
 }
 

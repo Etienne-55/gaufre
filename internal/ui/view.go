@@ -4,14 +4,37 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
  
+
 func (m Model) View() string {
 
 	if m.ShowResponse && m.Response != nil {
 		return m.renderResponseScreen()
 	}
 
+	if m.SelectPayload {
+		return m.renderPayloadScreen()
+	}
+
 	methods := RenderButtons(m.SelectedMethod)
 	urlInput := RenderURLInput(m.URL, m.Cursor, m.SelectURL) 
+
+	payloadButton := ""
+	if m.SelectedMethod == 1 || m.SelectedMethod == 2 {
+		buttonStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#874BFD")).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#874BFD")).
+			Padding(0, 2)
+		payloadButton = buttonStyle.Render("Edit Payload")
+	} else {
+		buttonStyle := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("0")). 
+			Padding(0, 2)
+		payloadButton = buttonStyle.Render("            ")
+	}
+
+
 	loading := ""
 	if m.Loading {
 		loading = "Loading..."
@@ -26,6 +49,8 @@ func (m Model) View() string {
 		"",
 		urlInput,
 		"",
+		payloadButton,
+		"",
 		loading,
 		"",
 		help,
@@ -38,6 +63,41 @@ func (m Model) View() string {
 
 	boxedContent := boxStyle.Render(content)
 
+	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
+}
+
+func (m Model) renderPayloadScreen() string {
+	payloadWithCursor := m.Payload[:m.PayloadCursor] + "|" + m.Payload[m.PayloadCursor:]
+
+	payloadStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Background(lipgloss.Color("#282828")).
+		Padding(1).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#4ECDC4")).
+		Width(50).
+		Height(20).
+		AlignHorizontal(lipgloss.Left).
+		AlignVertical(lipgloss.Top)
+
+	help := HelpStyle.Render("Edit JSON | ↑: back | q: quit")
+
+	content := lipgloss.JoinVertical(lipgloss.Center,
+		TitleStyle.Render("JSON Payload"),
+		"",
+		payloadStyle.Render(payloadWithCursor),
+		"",
+		help,
+	)
+
+	boxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#874BFD")).
+		Padding(2).
+		Width(60).
+		AlignHorizontal(lipgloss.Center)
+
+	boxedContent := boxStyle.Render(content)
 	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
 }
 

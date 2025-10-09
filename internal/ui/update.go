@@ -58,12 +58,16 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 
 	case "left":
-		if !m.SelectURL && m.SelectedMethod > 0 {
+		if m.SelectURL && m.Cursor > 0 {
+			m.Cursor--
+		} else if !m.SelectURL && m.SelectedMethod > 0 {
 			m.SelectedMethod--
 		}
 
 	case "right":
-		if !m.SelectURL && m.SelectedMethod < 3 {
+		if m.SelectURL && m.Cursor < len(m.URL) {
+			m.Cursor++
+		} else if !m.SelectURL && m.SelectedMethod < 3 {
 			m.SelectedMethod++
 		}
 

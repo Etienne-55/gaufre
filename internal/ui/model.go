@@ -19,7 +19,7 @@ type Model struct {
 }
 
 func NewModel() Model {
-	defaultURL := "http://localhost:8080"
+	defaultURL := "http://localhost:8080/api/rag/get_all_data"
 	return Model{
 		URL:    defaultURL,
 		Cursor: len(defaultURL),

@@ -75,3 +75,21 @@ func RenderURLInput(url string, cursor int, focused bool) string {
 	return urlStyle.Render(urlLabel + urlWithCursor)
 }
 
+
+
+
+
+var LogoStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF00FF"))
+
+func RenderLogo() string {
+	logo := `
+ ██████╗  █████╗ ██╗   ██╗███████╗██████╗ ███████╗
+██╔════╝ ██╔══██╗██║   ██║██╔════╝██╔══██╗██╔════╝
+██║  ███╗███████║██║   ██║█████╗  ██████╔╝█████╗  
+██║   ██║██╔══██║██║   ██║██╔══╝  ██╔══██╗██╔══╝  
+╚██████╔╝██║  ██║╚██████╔╝██║     ██║  ██║███████╗
+ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝  ╚═╝╚══════╝
+	`
+	return LogoStyle.Render(logo)
+}
+

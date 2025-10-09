@@ -42,10 +42,7 @@ func MakeGetRequest(url string) *types.Response {
 	}
 }
 
-// MakeRequest will handle all HTTP methods (for future expansion)
 func MakeRequest(req *types.Request) *types.Response {
-	// TODO: Implement POST, PUT, DELETE, etc.
-	// For now, just delegate to GET
 	if req.Method == "GET" {
 		return MakeGetRequest(req.URL)
 	}

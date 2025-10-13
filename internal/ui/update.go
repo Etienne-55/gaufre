@@ -46,14 +46,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "ctrl+c", "q":
 		return m, tea.Quit
 	
-
-
 	case "enter":
-		if m.ShowResponse {
-			m.ShowResponse = false
-			m.Response = nil
-			return m, nil
-		}
 
 		if m.SelectPayload {
 			m.Payload = m.Payload[:m.PayloadCursor] + "\n" + m.Payload[m.PayloadCursor:]
@@ -87,23 +80,6 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	//
-	// case "left":
-	// 	if m.SelectURL && m.Cursor > 0 {
-	// 		m.Cursor--
-	// 	} else if !m.SelectURL && m.SelectedMethod > 0 {
-	// 		m.SelectedMethod--
-	// 	}
-	// 	return m, nil
-	//
-	// case "right":
-	// 	if m.SelectURL && m.Cursor < len(m.URL) {
-	// 		m.Cursor++
-	// 	} else if !m.SelectURL && m.SelectedMethod < 3 {
-	// 		m.SelectedMethod++
-	// 	}
-
-
 	case "left":
 		if m.SelectPayload && m.PayloadCursor > 0 {
 			m.PayloadCursor--
@@ -123,40 +99,14 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.SelectedMethod++
 		}
 		return m, nil
-	// case "up":
-	// 	if m.SelectURL {
-	// 		m.SelectURL = false
-	// 	}
-	// 	return m, nil
-
-	// case "up":
-	// 		if m.SelectPayload {
-	// 			m.SelectPayload = false
-	// 			m.SelectURL = true
-	// 		} else if m.SelectURL {
-	// 			m.SelectURL = false
-	// 		}
-	// 		return m, nil
-
-	// case "down":
-	// 	if !m.SelectURL {
-	// 		m.SelectURL = true
-	// 	} else if  m.SelectURL && (m.SelectedMethod == 1 || m.SelectedMethod == 2){
-	// 		m.SelectURL = false
-	// 		m.SelectPayload = true
-	// 	}
-	// 	return m, nil
 
 	case "up":
 		if m.SelectPayload {
-			// Find previous newline
 			lastNewline := strings.LastIndex(m.Payload[:m.PayloadCursor], "\n")
 			if lastNewline != -1 {
-				// Find the newline before that
 				prevNewline := strings.LastIndex(m.Payload[:lastNewline], "\n")
 				colPos := m.PayloadCursor - lastNewline - 1
 				if prevNewline == -1 {
-					// First line
 					m.PayloadCursor = min(colPos, lastNewline)
 				} else {
 					lineLen := lastNewline - prevNewline - 1
@@ -170,17 +120,13 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case "down":
 		if m.SelectPayload {
-			// Find current line position
 			lastNewline := strings.LastIndex(m.Payload[:m.PayloadCursor], "\n")
 			colPos := m.PayloadCursor - lastNewline - 1
-			// Find next newline
 			nextNewline := strings.Index(m.Payload[m.PayloadCursor:], "\n")
 			if nextNewline != -1 {
 				nextNewline += m.PayloadCursor
-				// Find newline after that
 				nextNextNewline := strings.Index(m.Payload[nextNewline+1:], "\n")
 				if nextNextNewline == -1 {
-					// Last line
 					lineLen := len(m.Payload) - nextNewline - 1
 					m.PayloadCursor = nextNewline + 1 + min(colPos, lineLen)
 				} else {
@@ -201,6 +147,12 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.SelectPayload {
 			m.SelectPayload = false
 			m.SelectURL = true
+		}
+
+		if m.ShowResponse {
+			m.ShowResponse = false
+			m.Response = nil
+			return m, nil
 		}
 		return m, nil
 
@@ -228,13 +180,6 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	return m, nil
 }
-
-// func makeRequest(url string) tea.Cmd {
-// 	return func() tea.Msg {
-// 		response := http.MakeGetRequest(url)
-// 		return ResponseMsg{Response: response}
-// 	}
-// }
 
 func makeRequest(method string, url string, payload string) tea.Cmd {
 	return func() tea.Msg {

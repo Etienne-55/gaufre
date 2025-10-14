@@ -72,22 +72,17 @@ func (m Model) View() string {
 }
 
 func (m Model) renderHistoryScreen() string {
-	help := HelpStyle.Render("Type to filter | ↑↓: navigate | Enter: load | Esc: back | q: quit")
 
 	content := lipgloss.JoinVertical(lipgloss.Center,
-		RenderLogo(),
-		"",
-		TitleStyle.Render("Request History"),
-		"",
 		m.HistoryList.View(),
-		"",
-		help,
 	)
 
 	boxStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#4ECDC4")).
-		Padding(2)
+		Padding(2).
+		Width(60).
+		AlignHorizontal(lipgloss.Center)
 
 	boxedContent := boxStyle.Render(content)
 	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)

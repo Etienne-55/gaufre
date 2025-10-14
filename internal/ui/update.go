@@ -5,6 +5,7 @@ import (
 	"gaufre/internal/types"
 	"strings"
 
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -49,9 +50,21 @@ func min(a, b int) int {
 func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 
-	case "ctrl+c", "q":
+	case "q":
 		return m, tea.Quit
 	
+	case "ctrl+v":
+		if text, err := clipboard.ReadAll();
+		err == nil {
+		m.Payload = m.Payload[:m.PayloadCursor] + text + m.Payload[m.PayloadCursor:]
+		m.PayloadCursor += len(text)
+		}
+		return m, nil
+
+	case "ctrl+c":
+		clipboard.WriteAll(m.Payload)
+		return m, nil
+
 	case "enter":
 
 		if m.SelectPayload {

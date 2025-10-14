@@ -1,28 +1,14 @@
 package ui
 
 import (
-	"fmt"
-	"time"
 	"gaufre/internal/types"
+	"gaufre/internal/storage"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/spinner"
 )
 
-
-type HistoryItem struct {
-	Method string
-	URL string
-	Response int
-	Timestamp time.Time
-}
-
-func (h HistoryItem) FilterValue() string { return h.URL + " " + h.Method }
-func (h HistoryItem) Title() string       { return h.Method + " " + h.URL }
-func (h HistoryItem) Description() string {
-	return "status: " + fmt.Sprintf("%d", h.Response) + " | " + h.Timestamp.Format("15:04:05")
-}
 
 type Model struct {
 	URL      string
@@ -40,7 +26,7 @@ type Model struct {
 	SelectPayload bool
 	Spinner spinner.Model
 	ShowHistory bool
-	History []HistoryItem
+	History []types.HistoryItem
 	HistoryList list.Model
 }
 
@@ -56,6 +42,16 @@ func NewModel() Model {
 	historyList.SetFilteringEnabled(true)
 	historyList.SetShowStatusBar(false)
 
+	history := []types.HistoryItem{}
+	if loaded, err := storage.LoadHistory(); err == nil {
+		history = loaded
+		items := make([]list.Item, len(history))
+		for i, h := range history {
+			items[i] = h
+		}
+		historyList.SetItems(items)
+	}
+
 	return Model{
 		URL:    defaultURL,
 		Cursor: len(defaultURL),
@@ -65,7 +61,7 @@ func NewModel() Model {
 		SelectPayload: false,
 		Spinner: s,
 		ShowHistory: false,
-		History: []HistoryItem{},
+		History: history,
 		HistoryList: historyList,
 	}
 }

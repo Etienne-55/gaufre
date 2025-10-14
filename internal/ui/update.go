@@ -1,13 +1,13 @@
 package ui
 
 import (
+	"strings"
 	"gaufre/internal/http"
 	"gaufre/internal/types"
-	"strings"
-
 	"github.com/atotto/clipboard"
-	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/spinner"
 )
 
 
@@ -16,6 +16,11 @@ type ResponseMsg struct {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+
+	if m.ShowHistory {
+		return m.updateHistoryList(msg)
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		return m.handleKeyPress(msg)
@@ -28,17 +33,33 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg: 
 		m.Width = msg.Width
 		m.Height = msg.Height
+		m.HistoryList.SetSize(msg.Width-4, msg.Height-10)
 		return m, nil 
 
 	case ResponseMsg:
 		m.Loading = false
 		m.Response = msg.Response
+
+		if m.Response != nil && m.Response.Error == nil {
+			methods := []string{"GET", "POST", "PUT", "DELETE"}
+			histItem := HistoryItem{
+				Method: methods[m.SelectedMethod],
+				URL: m.URL,
+			}
+			m.History = append([]HistoryItem{histItem}, m.History...)
+	
+			items := make([]list.Item, len(m.History))
+			for i, h := range m.History {
+				items[i] = h
+			}
+			m.HistoryList.SetItems(items)
+		}
 		m.ShowResponse = true
 		return m, nil
 	}
-
 	return m, nil
 }
+
 
 func min(a, b int) int {
 	if a < b {
@@ -47,11 +68,49 @@ func min(a, b int) int {
 	return b
 }
 
+
+func (m Model) updateHistoryList(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q":
+			return m, tea.Quit
+
+		case "esc", "1":
+			m.ShowHistory = false
+			return m, nil
+
+		case "enter":
+			if len(m.History) > 0 {
+				selectedIdx := m.HistoryList.Index()
+				if selectedIdx >= 0 && selectedIdx < len(m.History) {
+					item := m.History[selectedIdx]
+					m.URL = item.URL
+					m.Cursor = len(m.URL)
+					m.ShowHistory = false
+					m.SelectURL = true
+					return m, nil
+				}
+			}
+			return m, nil
+		}
+	}
+
+	var cmd tea.Cmd
+	m.HistoryList, cmd = m.HistoryList.Update(msg)
+	return m, cmd
+}
+
+
 func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 
 	case "q":
 		return m, tea.Quit
+
+	case "1":
+		m.ShowHistory = !m.ShowHistory
+		return m, nil
 	
 	case "ctrl+v":
 		if text, err := clipboard.ReadAll();

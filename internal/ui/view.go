@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-
 	"github.com/charmbracelet/lipgloss"
 )
  
@@ -11,6 +10,10 @@ func (m Model) View() string {
 
 	if m.ShowResponse && m.Response != nil {
 		return m.renderResponseScreen()
+	}
+
+	if m.ShowHistory {
+		return m.renderHistoryScreen()
 	}
 
 	if m.SelectPayload {
@@ -68,36 +71,23 @@ func (m Model) View() string {
 	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
 }
 
-func (m Model) renderPayloadScreen() string {
-	payloadWithCursor := m.Payload[:m.PayloadCursor] + "|" + m.Payload[m.PayloadCursor:]
-
-	payloadStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFFFFF")).
-		Background(lipgloss.Color("#282828")).
-		Padding(1).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#4ECDC4")).
-		Width(50).
-		Height(20).
-		AlignHorizontal(lipgloss.Left).
-		AlignVertical(lipgloss.Top)
-
-	help := HelpStyle.Render("Edit JSON | ↑: back | q: quit")
+func (m Model) renderHistoryScreen() string {
+	help := HelpStyle.Render("Type to filter | ↑↓: navigate | Enter: load | Esc: back | q: quit")
 
 	content := lipgloss.JoinVertical(lipgloss.Center,
-		TitleStyle.Render("JSON Payload"),
+		RenderLogo(),
 		"",
-		payloadStyle.Render(payloadWithCursor),
+		TitleStyle.Render("Request History"),
+		"",
+		m.HistoryList.View(),
 		"",
 		help,
 	)
 
 	boxStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#874BFD")).
-		Padding(2).
-		Width(60).
-		AlignHorizontal(lipgloss.Center)
+		BorderForeground(lipgloss.Color("#4ECDC4")).
+		Padding(2)
 
 	boxedContent := boxStyle.Render(content)
 	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
@@ -128,6 +118,41 @@ func (m Model) renderResponseScreen() string {
 		"",
 		help,
 	)
+
+	boxedContent := boxStyle.Render(content)
+	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
+}
+ 
+func (m Model) renderPayloadScreen() string {
+	payloadWithCursor := m.Payload[:m.PayloadCursor] + "|" + m.Payload[m.PayloadCursor:]
+
+	payloadStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Background(lipgloss.Color("#282828")).
+		Padding(1).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#4ECDC4")).
+		Width(50).
+		Height(20).
+		AlignHorizontal(lipgloss.Left).
+		AlignVertical(lipgloss.Top)
+
+	help := HelpStyle.Render("Edit JSON | ↑: back | q: quit")
+
+	content := lipgloss.JoinVertical(lipgloss.Center,
+		TitleStyle.Render("JSON Payload"),
+		"",
+		payloadStyle.Render(payloadWithCursor),
+		"",
+		help,
+	)
+
+	boxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#874BFD")).
+		Padding(2).
+		Width(60).
+		AlignHorizontal(lipgloss.Center)
 
 	boxedContent := boxStyle.Render(content)
 	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)

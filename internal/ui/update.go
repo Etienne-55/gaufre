@@ -1,9 +1,11 @@
 package ui
 
 import (
-	"strings"
 	"gaufre/internal/http"
 	"gaufre/internal/types"
+	"strings"
+
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -16,6 +18,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		return m.handleKeyPress(msg)
+
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.Spinner, cmd = m.Spinner.Update(msg)
+		return m, cmd
 
 	case tea.WindowSizeMsg: 
 		m.Width = msg.Width
@@ -31,7 +38,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	return m, nil
 }
-
 
 func min(a, b int) int {
 	if a < b {
@@ -65,8 +71,10 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.Response = nil
 			m.ShowResponse = false
 			methods := []string{"GET", "POST", "PUT", "DELETE"}
-			return m, 
-			makeRequest(methods[m.SelectedMethod], m.URL, m.Payload)
+			return m, tea.Batch( 
+			makeRequest(methods[m.SelectedMethod], m.URL, m.Payload),
+			m.Spinner.Tick,
+			)
 		}
 		return m, nil
 

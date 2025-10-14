@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"github.com/charmbracelet/lipgloss"
 )
  
@@ -37,7 +39,7 @@ func (m Model) View() string {
 
 	loading := ""
 	if m.Loading {
-		loading = "Loading..."
+		loading = fmt.Sprintf("Loading %s", m.Spinner.View())	
 	}
 
 	help := HelpStyle.Render("←→: choose method | Enter: send | q: quit")

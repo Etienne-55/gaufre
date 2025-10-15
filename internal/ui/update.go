@@ -1,21 +1,16 @@
 package ui
 
 import (
-	"gaufre/internal/http"
-	"gaufre/internal/storage"
-	"gaufre/internal/types"
 	"strings"
-
+	"gaufre/internal/http"
+	"gaufre/internal/types"
+	"gaufre/internal/storage"
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/spinner"
 )
 
-
-type ResponseMsg struct {
-	Response *types.Response
-}
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
@@ -38,7 +33,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.HistoryList.SetSize(msg.Width-4, msg.Height-10)
 		return m, nil 
 
-	case ResponseMsg:
+	case http.ResponseMsg:
 		m.Loading = false
 		m.Response = msg.Response
 		if m.Response != nil && m.Response.Error == nil {
@@ -68,38 +63,6 @@ func min(a, b int) int {
 	}
 	return b
 }
-
-// func (m Model) updateHistoryList(msg tea.Msg) (tea.Model, tea.Cmd) {
-// 	switch msg := msg.(type) {
-// 	case tea.KeyMsg:
-// 		switch msg.String() {
-// 		case "q":
-// 			return m, tea.Quit
-//
-// 		case "esc", "1":
-// 			m.ShowHistory = false
-// 			return m, nil
-//
-// 		case "enter":
-// 			if len(m.History) > 0 {
-// 				selectedIdx := m.HistoryList.Index()
-// 				if selectedIdx >= 0 && selectedIdx < len(m.History) {
-// 					item := m.History[selectedIdx]
-// 					m.URL = item.URL
-// 					m.Cursor = len(m.URL)
-// 					m.ShowHistory = false
-// 					m.SelectURL = true
-// 					return m, nil
-// 				}
-// 			}
-// 			return m, nil
-// 		}
-// 	}
-//
-// 	var cmd tea.Cmd
-// 	m.HistoryList, cmd = m.HistoryList.Update(msg)
-// 	return m, cmd
-// }
 
 func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
@@ -143,7 +106,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.ShowResponse = false
 			methods := []string{"GET", "POST", "PUT", "DELETE"}
 			return m, tea.Batch( 
-			makeRequest(methods[m.SelectedMethod], m.URL, m.Payload),
+			http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload),
 			m.Spinner.Tick,
 			)
 		}
@@ -258,26 +221,5 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
-}
-
-func makeRequest(method string, url string, payload string) tea.Cmd {
-	return func() tea.Msg {
-		var response *types.Response
-
-		switch method {
-		case "GET":
-			response = http.MakeGetRequest(url)
-		case "POST":
-			response = http.MakePostRequest(url, payload)
-		// case "PUT":
-		// 	response = http.MakePutRequest(url, payload)
-		// case "DELETE":
-		// 	response = http.MakeDeleteRequest(url)
-		default:
-			response = http.MakeGetRequest(url)
-		}
-
-		return ResponseMsg{Response: response}
-	}
 }
 

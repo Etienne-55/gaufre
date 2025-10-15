@@ -3,34 +3,30 @@ package http
 import (
 	"io"
 	"time"
-	"bytes"
 	"net/http"
 	"gaufre/internal/types"
 )
 
 
-func MakePostRequest(url string, jsonBody string) *types.Response {
+func MakeDeleteRequest(url string) *types.Response {
 	start := time.Now()
 
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
 
-	payload := bytes.NewBufferString(jsonBody)
-
-	req, err := http.NewRequest("POST", url, payload)
+	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return &types.Response{
-			Error: err,
+			Error:        err,
 			ResponseTime: time.Since(start),
 		}
 	}
-	req.Header.Set("Content-type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
 		return &types.Response{
-			Error: err,
+			Error:        err,
 			ResponseTime: time.Since(start),
 		}
 	}
@@ -39,16 +35,16 @@ func MakePostRequest(url string, jsonBody string) *types.Response {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return &types.Response{
-			StatusCode: resp.StatusCode,
-			Error: err,
+			StatusCode:   resp.StatusCode,
+			Error:        err,
 			ResponseTime: time.Since(start),
 		}
 	}
 
 	return &types.Response{
-		Body: string(body),
-		StatusCode: resp.StatusCode,
-		Headers: resp.Header,
+		Body:         string(body),
+		StatusCode:   resp.StatusCode,
+		Headers:      resp.Header,
 		ResponseTime: time.Since(start),
 	}
 }

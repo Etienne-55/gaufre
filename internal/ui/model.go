@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/viewport"
 )
 
 
@@ -28,6 +29,8 @@ type Model struct {
 	ShowHistory bool
 	History []types.HistoryItem
 	HistoryList list.Model
+	Viewport viewport.Model
+	ViewportReady bool
 }
 
 func NewModel() Model {

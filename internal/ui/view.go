@@ -88,35 +88,35 @@ func (m Model) renderHistoryScreen() string {
 	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
 }
 
-func (m Model) renderResponseScreen() string {
-	boxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#874BFD")).
-		Padding(1, 2)
-
-	availableWidth := m.Width - 10
-	availableHeight := m.Height - 8
-
-	response := m.renderResponse()
-
-	styledResponse := lipgloss.NewStyle().
-		Width(availableWidth).
-		Height(availableHeight).
-		AlignVertical(lipgloss.Top).
-		Render(response)
-
-
-	help := HelpStyle.Render("Press Esc to go back | q: quit")
-
-	content := lipgloss.JoinVertical(lipgloss.Center,
-		styledResponse,
-		"",
-		help,
-	)
-
-	boxedContent := boxStyle.Render(content)
-	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
-}
+// func (m Model) rrenderResponseScreen() string {
+// 	boxStyle := lipgloss.NewStyle().
+// 		Border(lipgloss.RoundedBorder()).
+// 		BorderForeground(lipgloss.Color("#874BFD")).
+// 		Padding(1, 2)
+//
+// 	availableWidth := m.Width - 10
+// 	availableHeight := m.Height - 8
+//
+// 	response := m.renderResponse()
+//
+// 	styledResponse := lipgloss.NewStyle().
+// 		Width(availableWidth).
+// 		Height(availableHeight).
+// 		AlignVertical(lipgloss.Top).
+// 		Render(response)
+//
+//
+// 	help := HelpStyle.Render("Press Esc to go back | q: quit")
+//
+// 	content := lipgloss.JoinVertical(lipgloss.Center,
+// 		styledResponse,
+// 		"",
+// 		help,
+// 	)
+//
+// 	boxedContent := boxStyle.Render(content)
+// 	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
+// }
  
 func (m Model) renderPayloadScreen() string {
 	payloadWithCursor := m.Payload[:m.PayloadCursor] + "|" + m.Payload[m.PayloadCursor:]
@@ -153,3 +153,28 @@ func (m Model) renderPayloadScreen() string {
 	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
 }
 
+func (m Model) renderResponseScreen() string {
+	if !m.ViewportReady {
+		return "Loading..."
+	}
+
+	help := HelpStyle.Render("↑↓/j/k: scroll | Esc: back | q: quit")
+
+	content := lipgloss.JoinVertical(lipgloss.Center,
+		m.Viewport.View(),
+		"",
+		help,
+	)
+
+	boxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#874BFD")).
+		Padding(1, 2)
+
+	boxedContent := boxStyle.Render(content)
+	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
+}
+
+func (m Model) renderResponseContent() string {
+	return m.renderResponse()
+}

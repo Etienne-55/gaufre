@@ -37,3 +37,23 @@ func (m Model) updateHistoryList(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+func (m Model) updateResponseViewport(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q":
+		 	return m, tea.Quit
+		case "esc":
+			m.ShowResponse = false
+			m.Response = nil 
+			m.ViewportReady = false
+			return m, nil
+		}
+	}
+
+	m.Viewport, cmd = m.Viewport.Update(msg)
+	return m, cmd
+}
+

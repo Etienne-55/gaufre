@@ -2,11 +2,13 @@ package ui
 
 import (
 	"gaufre/internal/http"
-	"gaufre/internal/types"
 	"gaufre/internal/storage"
+	"gaufre/internal/types"
+
 	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 
@@ -14,6 +16,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.ShowHistory {
 		return m.updateHistoryList(msg)
+	}
+
+	if m.ShowResponse {
+		return m.updateResponseViewport(msg)
 	}
 
 	switch msg := msg.(type) {
@@ -29,7 +35,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Width = msg.Width
 		m.Height = msg.Height
 		m.HistoryList.SetSize(msg.Width-4, msg.Height-10)
-		return m, nil 
+
+		if m.ShowResponse {
+			headerHeight := 4
+			footerHeight := 3
+			verticalMargin := headerHeight + footerHeight
+
+			if !m.ViewportReady {
+				m.Viewport = viewport.New(msg.Width-10, msg.Height-verticalMargin)
+				m.ViewportReady = true
+				if m.Response != nil {
+					m.Viewport.SetContent(m.renderResponse())
+				}
+			} else {
+				m.Viewport.Width = msg.Width - 10
+				m.Viewport.Height = msg.Height - verticalMargin
+			}
+		}
+		return m, nil
 
 	case http.ResponseMsg:
 		m.Loading = false
@@ -49,6 +72,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.HistoryList.SetItems(items)
 		}
+		m.Viewport = viewport.New(m.Width-10, m.Height-10)
+		m.Viewport.SetContent(m.renderResponseContent())
+		m.ViewportReady = true
 		m.ShowResponse = true
 		return m, nil
 	}

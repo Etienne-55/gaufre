@@ -12,7 +12,7 @@ func (m Model) updateHistoryList(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q":
 			return m, tea.Quit
 
-		case "esc", "1":
+		case "1":
 			m.ShowHistory = false
 			return m, nil
 

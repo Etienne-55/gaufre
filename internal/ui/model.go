@@ -34,7 +34,7 @@ type Model struct {
 }
 
 func NewModel() Model {
-	defaultURL := "http://localhost:8080/api/rag/get_all_data"
+	defaultURL := "http://localhost:8080/events"
 
 	s := spinner.New()
 	s.Spinner = spinner.Dot

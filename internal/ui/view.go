@@ -106,7 +106,7 @@ func (m Model) renderResponseScreen() string {
 		Render(response)
 
 
-	help := HelpStyle.Render("Press Enter to go back | q: quit")
+	help := HelpStyle.Render("Press Esc to go back | q: quit")
 
 	content := lipgloss.JoinVertical(lipgloss.Center,
 		styledResponse,

@@ -45,7 +45,7 @@ func (m Model) View() string {
 		loading = fmt.Sprintf("Loading %s", m.Spinner.View())	
 	}
 
-	help := HelpStyle.Render("←→: choose method | Enter: send | q: quit")
+	help := HelpStyle.Render("←→: choose method | Enter: send | Tab: history | q: quit")
 
 	content := lipgloss.JoinVertical(lipgloss.Center,
 		RenderLogo(),

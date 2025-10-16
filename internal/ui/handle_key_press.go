@@ -14,7 +14,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "q":
 		return m, tea.Quit
 
-	case "1":
+	case "tab":
 		m.ShowHistory = !m.ShowHistory
 		return m, nil
 	

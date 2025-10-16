@@ -33,6 +33,15 @@ func (m Model) updateHistoryList(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.Cursor = len(m.URL)
 					m.Payload = item.Payload
 					m.PayloadCursor = len(m.Payload)
+		
+					methods := []string{"GET", "POST", "PUT", "DELETE"}
+					for i , method := range methods {
+						if method == item.Method {
+							m.SelectedMethod = i
+							break
+						}
+					}
+
 					m.ShowHistory = false
 					m.SelectURL = true
 					return m, nil

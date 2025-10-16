@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -13,6 +14,13 @@ func (m Model) updateHistoryList(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "esc":
+
+			if m.HistoryList.FilterState() == list.Filtering {
+				var cmd tea.Cmd
+				m.HistoryList, cmd = m.HistoryList.Update(msg)
+				return m, cmd
+			}
+
 			m.ShowHistory = false
 			return m, nil
 

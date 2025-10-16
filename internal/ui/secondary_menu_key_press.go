@@ -24,6 +24,10 @@ func (m Model) updateHistoryList(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ShowHistory = false
 			return m, nil
 
+		case "tab":
+			m.ShowHistory = false
+			return m, nil
+
 		case "enter":
 			if len(m.History) > 0 {
 				selectedIdx := m.HistoryList.Index()

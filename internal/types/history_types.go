@@ -10,6 +10,7 @@ type HistoryItem struct {
 	URL string
 	Response int
 	Timestamp time.Time
+	Payload string 
 }
 
 func (h HistoryItem) FilterValue() string { return h.URL + " " + h.Method }

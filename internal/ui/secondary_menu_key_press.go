@@ -12,7 +12,7 @@ func (m Model) updateHistoryList(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q":
 			return m, tea.Quit
 
-		case "1":
+		case "esc":
 			m.ShowHistory = false
 			return m, nil
 
@@ -23,6 +23,8 @@ func (m Model) updateHistoryList(msg tea.Msg) (tea.Model, tea.Cmd) {
 					item := m.History[selectedIdx]
 					m.URL = item.URL
 					m.Cursor = len(m.URL)
+					m.Payload = item.Payload
+					m.PayloadCursor = len(m.Payload)
 					m.ShowHistory = false
 					m.SelectURL = true
 					return m, nil

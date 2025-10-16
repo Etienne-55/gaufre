@@ -9,6 +9,7 @@ import (
 
 
 const historyFileName = ".url_history.json"
+const maxHistoryItems = 100
 
 func GetHistoryPath() (string, error) {
 	home, err := os.UserHomeDir()
@@ -22,6 +23,10 @@ func SaveHistory(items []types.HistoryItem) error {
 	path, err := GetHistoryPath()
 	if err != nil {
 		return err
+	}
+
+	if len(items) > maxHistoryItems {
+		items = items[:maxHistoryItems]
 	}
 
 	data, err := json.MarshalIndent(items, "", "  ")

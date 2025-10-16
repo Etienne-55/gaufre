@@ -62,6 +62,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			histItem := types.HistoryItem{
 				Method: methods[m.SelectedMethod],
 				URL: m.URL,
+				Payload: m.Payload,
 			}
 			m.History = append([]types.HistoryItem{histItem}, m.History...)
 	

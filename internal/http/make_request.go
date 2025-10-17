@@ -19,8 +19,8 @@ func MakeRequest(method string, url string, payload string) tea.Cmd {
 			response = MakeGetRequest(url)
 		case "POST":
 			response = MakePostRequest(url, payload)
-		// case "PUT":
-		// 	response = http.MakePutRequest(url, payload)
+		case "PUT":
+			response = MakePutRequest(url, payload)
 		case "DELETE":
 			response = MakeDeleteRequest(url)
 		default:

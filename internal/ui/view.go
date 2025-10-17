@@ -87,43 +87,14 @@ func (m Model) renderHistoryScreen() string {
 	boxedContent := boxStyle.Render(content)
 	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
 }
-
-// func (m Model) rrenderResponseScreen() string {
-// 	boxStyle := lipgloss.NewStyle().
-// 		Border(lipgloss.RoundedBorder()).
-// 		BorderForeground(lipgloss.Color("#874BFD")).
-// 		Padding(1, 2)
-//
-// 	availableWidth := m.Width - 10
-// 	availableHeight := m.Height - 8
-//
-// 	response := m.renderResponse()
-//
-// 	styledResponse := lipgloss.NewStyle().
-// 		Width(availableWidth).
-// 		Height(availableHeight).
-// 		AlignVertical(lipgloss.Top).
-// 		Render(response)
-//
-//
-// 	help := HelpStyle.Render("Press Esc to go back | q: quit")
-//
-// 	content := lipgloss.JoinVertical(lipgloss.Center,
-// 		styledResponse,
-// 		"",
-// 		help,
-// 	)
-//
-// 	boxedContent := boxStyle.Render(content)
-// 	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
-// }
  
 func (m Model) renderPayloadScreen() string {
+	payloadOptios := RenderPayloadButtons(0)
 	payloadWithCursor := m.Payload[:m.PayloadCursor] + "|" + m.Payload[m.PayloadCursor:]
 
 	payloadStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFFFFF")).
-		Background(lipgloss.Color("#282828")).
+		Background(lipgloss.Color("#24283b")).
 		Padding(1).
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#4ECDC4")).
@@ -132,10 +103,12 @@ func (m Model) renderPayloadScreen() string {
 		AlignHorizontal(lipgloss.Left).
 		AlignVertical(lipgloss.Top)
 
-	help := HelpStyle.Render("Edit JSON | ↑: back | q: quit")
+	help := HelpStyle.Render("Edit JSON | Esc: back | q: quit")
 
 	content := lipgloss.JoinVertical(lipgloss.Center,
-		TitleStyle.Render("JSON Payload"),
+		// TitleStyle.Render("JSON Payload"),
+		// "",
+		payloadOptios,
 		"",
 		payloadStyle.Render(payloadWithCursor),
 		"",
@@ -178,3 +151,4 @@ func (m Model) renderResponseScreen() string {
 func (m Model) renderResponseContent() string {
 	return m.renderResponse()
 }
+

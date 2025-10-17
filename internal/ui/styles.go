@@ -75,3 +75,31 @@ func RenderURLInput(url string, cursor int, focused bool) string {
 	return urlStyle.Render(urlLabel + urlWithCursor)
 }
 
+func RenderPayloadButtons(selected int) string {
+	methods := []string{"Body", "Auth"}
+	var buttons []string
+
+	for i, method := range methods {
+		if i == selected {
+
+			btn := lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#FFFFFF")).
+				Background(lipgloss.Color("#874BFD")).
+				Bold(true).
+				Padding(0, 2).
+				Render(method)
+			buttons = append(buttons, btn)
+		} else {
+			btn := lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#874BFD")).
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("#874BFD")).
+				Padding(0, 2).
+				Render(method)
+			buttons = append(buttons, btn)
+		}
+	}
+
+	return lipgloss.JoinHorizontal(lipgloss.Center, buttons...)
+}
+

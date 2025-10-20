@@ -217,7 +217,11 @@ case "up":
 		if m.SelectURL && len(msg.String()) == 1 {
 			m.URL = m.URL[:m.Cursor] + msg.String() + m.URL[m.Cursor:]
 			m.Cursor++
-
+			return m, nil
+		}
+		if m.SelectAuth && len(msg.String()) == 1 {
+			m.AuthToken = m.AuthToken[:m.AuthTokenCursor] + msg.String() + m.AuthToken[m.AuthTokenCursor:]
+			m.AuthTokenCursor++
 			return m, nil
 		}
 	}

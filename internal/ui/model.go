@@ -32,6 +32,7 @@ type Model struct {
 	AuthToken string
 	AuthTokenCursor int
 	SelectAuth bool
+
 	PayloadMenu int
 	SelectPayloadMenu bool
 

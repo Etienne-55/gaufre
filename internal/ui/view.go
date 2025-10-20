@@ -44,7 +44,6 @@ func (m Model) View() string {
 		"",
 		urlInput,
 		"",
-		// payloadButton,
 		payloadOptios,
 		"",
 		loading,
@@ -96,8 +95,6 @@ func (m Model) renderPayloadScreen() string {
 	help := HelpStyle.Render("Edit JSON | Esc: back | q: quit")
 
 	content := lipgloss.JoinVertical(lipgloss.Center,
-		// TitleStyle.Render("JSON Payload"),
-		// "",
 		payloadStyle.Render(payloadWithCursor),
 		"",
 		help,
@@ -128,7 +125,6 @@ func (m Model) renderAuthscreen() string {
 		AlignHorizontal(lipgloss.Left).
 		AlignVertical(lipgloss.Top)
 
-	// help := HelpStyle.Render("Edit JSON | Esc: back | q: quit")
 	help := HelpStyle.Render("Edit Token | Esc: back | q: quit")
 
 	content := lipgloss.JoinVertical(lipgloss.Center,

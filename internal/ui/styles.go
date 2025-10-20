@@ -30,16 +30,24 @@ var (
 			MarginTop(1)
 )
 
-func RenderButtons(selected int) string {
+func RenderMethodButtons(selected int, focused bool) string {
 	methods := []string{"GET", "POST", "PUT", "DELETE"}
 	var buttons []string
 
 	for i, method := range methods {
-		if i == selected {
-
+		if focused && i == selected {
 			btn := lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#FFFFFF")).
 				Background(lipgloss.Color("#874BFD")).
+				Bold(true).
+				Padding(0, 2).
+				Render(method)
+			buttons = append(buttons, btn)
+		} else if !focused && i == selected {
+			btn := lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#00FF00")).
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("#00FF00")).
 				Bold(true).
 				Padding(0, 2).
 				Render(method)
@@ -75,13 +83,12 @@ func RenderURLInput(url string, cursor int, focused bool) string {
 	return urlStyle.Render(urlLabel + urlWithCursor)
 }
 
-func RenderPayloadButtons(selected int) string {
+func RenderPayloadButtons(selected int, focused bool) string {
 	methods := []string{"Body", "Auth"}
 	var buttons []string
 
 	for i, method := range methods {
-		if i == selected {
-
+		if focused && i == selected {
 			btn := lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#FFFFFF")).
 				Background(lipgloss.Color("#874BFD")).

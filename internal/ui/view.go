@@ -24,26 +24,11 @@ func (m Model) View() string {
 		return m.renderAuthscreen()
 	}
 
-	methods := RenderButtons(m.SelectedMethod)
-	payloadOptios := RenderPayloadButtons(m.PayloadMenu)
+	focused := !m.SelectURL && !m.SelectPayloadMenu && !m.SelectPayload && !m.SelectAuth
+	focused2 := !m.SelectURL  && !focused
+	methods := RenderMethodButtons(m.SelectedMethod, focused)
+	payloadOptios := RenderPayloadButtons(m.PayloadMenu, focused2)
 	urlInput := RenderURLInput(m.URL, m.Cursor, m.SelectURL) 
-
-	// payloadButton := ""
-	// if m.SelectedMethod == 1 || m.SelectedMethod == 2 {
-	// 	buttonStyle := lipgloss.NewStyle().
-	// 		Foreground(lipgloss.Color("#874BFD")).
-	// 		Border(lipgloss.RoundedBorder()).
-	// 		BorderForeground(lipgloss.Color("#874BFD")).
-	// 		Padding(0, 2)
-	// 	payloadButton = buttonStyle.Render("Edit Payload")
-	// } else {
-	// 	buttonStyle := lipgloss.NewStyle().
-	// 		Border(lipgloss.RoundedBorder()).
-	// 		BorderForeground(lipgloss.Color("0")). 
-	// 		Padding(0, 2)
-	// 	payloadButton = buttonStyle.Render("            ")
-	// }
-
 
 	loading := ""
 	if m.Loading {

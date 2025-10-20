@@ -20,24 +20,29 @@ func (m Model) View() string {
 		return m.renderPayloadScreen()
 	}
 
+	if m.SelectAuth {
+		return m.renderAuthscreen()
+	}
+
 	methods := RenderButtons(m.SelectedMethod)
+	payloadOptios := RenderPayloadButtons(m.PayloadMenu)
 	urlInput := RenderURLInput(m.URL, m.Cursor, m.SelectURL) 
 
-	payloadButton := ""
-	if m.SelectedMethod == 1 || m.SelectedMethod == 2 {
-		buttonStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#874BFD")).
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#874BFD")).
-			Padding(0, 2)
-		payloadButton = buttonStyle.Render("Edit Payload")
-	} else {
-		buttonStyle := lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("0")). 
-			Padding(0, 2)
-		payloadButton = buttonStyle.Render("            ")
-	}
+	// payloadButton := ""
+	// if m.SelectedMethod == 1 || m.SelectedMethod == 2 {
+	// 	buttonStyle := lipgloss.NewStyle().
+	// 		Foreground(lipgloss.Color("#874BFD")).
+	// 		Border(lipgloss.RoundedBorder()).
+	// 		BorderForeground(lipgloss.Color("#874BFD")).
+	// 		Padding(0, 2)
+	// 	payloadButton = buttonStyle.Render("Edit Payload")
+	// } else {
+	// 	buttonStyle := lipgloss.NewStyle().
+	// 		Border(lipgloss.RoundedBorder()).
+	// 		BorderForeground(lipgloss.Color("0")). 
+	// 		Padding(0, 2)
+	// 	payloadButton = buttonStyle.Render("            ")
+	// }
 
 
 	loading := ""
@@ -54,7 +59,8 @@ func (m Model) View() string {
 		"",
 		urlInput,
 		"",
-		payloadButton,
+		// payloadButton,
+		payloadOptios,
 		"",
 		loading,
 		"",
@@ -89,7 +95,6 @@ func (m Model) renderHistoryScreen() string {
 }
  
 func (m Model) renderPayloadScreen() string {
-	payloadOptios := RenderPayloadButtons(0)
 	payloadWithCursor := m.Payload[:m.PayloadCursor] + "|" + m.Payload[m.PayloadCursor:]
 
 	payloadStyle := lipgloss.NewStyle().
@@ -108,8 +113,40 @@ func (m Model) renderPayloadScreen() string {
 	content := lipgloss.JoinVertical(lipgloss.Center,
 		// TitleStyle.Render("JSON Payload"),
 		// "",
-		payloadOptios,
+		payloadStyle.Render(payloadWithCursor),
 		"",
+		help,
+	)
+
+	boxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#874BFD")).
+		Padding(2).
+		Width(60).
+		AlignHorizontal(lipgloss.Center)
+
+	boxedContent := boxStyle.Render(content)
+	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
+}
+
+func (m Model) renderAuthscreen() string {
+	payloadWithCursor := m.AuthToken[:m.AuthTokenCursor] + "|" + m.AuthToken[m.AuthTokenCursor:]
+
+	payloadStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Background(lipgloss.Color("#24283b")).
+		Padding(1).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#4ECDC4")).
+		Width(50).
+		Height(20).
+		AlignHorizontal(lipgloss.Left).
+		AlignVertical(lipgloss.Top)
+
+	// help := HelpStyle.Render("Edit JSON | Esc: back | q: quit")
+	help := HelpStyle.Render("Edit Token | Esc: back | q: quit")
+
+	content := lipgloss.JoinVertical(lipgloss.Center,
 		payloadStyle.Render(payloadWithCursor),
 		"",
 		help,

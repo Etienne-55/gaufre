@@ -30,17 +30,30 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		clipboard.WriteAll(m.Payload)
 		return m, nil
 
-	case "enter":
 
+	case "enter":
 		if m.SelectPayload {
 			m.Payload = m.Payload[:m.PayloadCursor] + "\n" + m.Payload[m.PayloadCursor:]
 			m.PayloadCursor++
 			return m, nil
 		}
 
-		if m.SelectPayload {
-			m.SelectPayload = false
-			m.SelectURL = true
+		if m.SelectAuth {
+			m.AuthToken = m.AuthToken[:m.AuthTokenCursor] + "\n" + m.AuthToken[m.AuthTokenCursor:]
+			m.AuthTokenCursor++
+			return m, nil
+		}
+
+		if m.SelectPayloadMenu {
+			// Pressed enter on payload menu - open selected editor
+			m.SelectPayloadMenu = false
+			if m.PayloadMenu == 0 {
+				// Selected Body
+				m.SelectPayload = true
+			} else {
+				// Selected Auth
+				m.SelectAuth = true
+			}
 			return m, nil
 		}
 
@@ -49,12 +62,47 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.Response = nil
 			m.ShowResponse = false
 			methods := []string{"GET", "POST", "PUT", "DELETE"}
-			return m, tea.Batch( 
-			http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload),
-			m.Spinner.Tick,
+			return m, tea.Batch(
+				// http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload, m.AuthToken),
+				http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload),
+				m.Spinner.Tick,
 			)
 		}
 		return m, nil
+	// case "enter":
+	//
+	// 	if m.SelectPayload {
+	// 		m.Payload = m.Payload[:m.PayloadCursor] + "\n" + m.Payload[m.PayloadCursor:]
+	// 		m.PayloadCursor++
+	// 		return m, nil
+	// 	}
+	//
+	// 	// if m.SelectPayload {
+	// 	// 	m.SelectPayload = false
+	// 	// 	m.SelectURL = true
+	// 	// 	return m, nil
+	// 	// }
+	// 	if m.SelectPayload {
+	// 		m.SelectPayload = false
+	// 		if m.PayloadMenu == 0 {
+	// 			m.SelectPayload = true
+	// 		} else {
+	// 			m.SelectAuth = true
+	// 		}
+	// 		return m, nil
+	// 	}
+	//
+	// 	if m.SelectURL && !m.Loading {
+	// 		m.Loading = true
+	// 		m.Response = nil
+	// 		m.ShowResponse = false
+	// 		methods := []string{"GET", "POST", "PUT", "DELETE"}
+	// 		return m, tea.Batch( 
+	// 		http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload),
+	// 		m.Spinner.Tick,
+	// 		)
+	// 	}
+	// 	return m, nil
 
 	case "backspace":
 		if m.SelectPayload && len(m.Payload) > 0 && m.PayloadCursor > 0 {
@@ -66,43 +114,66 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case "left":
-		if m.SelectPayload && m.PayloadCursor > 0 {
-			m.PayloadCursor--
-		} else if m.SelectURL && m.Cursor > 0 {
-			m.Cursor--
-		} else if !m.SelectURL && !m.SelectPayload && m.SelectedMethod > 0 {
-			m.SelectedMethod--
-		}
-		return m, nil
+case "left":
+	if m.SelectPayload && m.PayloadCursor > 0 {
+		m.PayloadCursor--
+	} else if m.SelectAuth && m.AuthTokenCursor > 0 {
+		m.AuthTokenCursor--
+	} else if m.SelectPayloadMenu && m.PayloadMenu > 0 {
+		m.PayloadMenu--
+	} else if m.SelectURL && m.Cursor > 0 {
+		m.Cursor--
+	} else if !m.SelectURL && !m.SelectPayload && !m.SelectAuth && !m.SelectPayloadMenu && m.SelectedMethod > 0 {
+		m.SelectedMethod--
+	}
+	return m, nil
 
-	case "right":
-		if m.SelectPayload && m.PayloadCursor < len(m.Payload) {
-			m.PayloadCursor++
-		} else if m.SelectURL && m.Cursor < len(m.URL) {
-			m.Cursor++
-		} else if !m.SelectURL && !m.SelectPayload && m.SelectedMethod < 3 {
-			m.SelectedMethod++
-		}
-		return m, nil
+case "right":
+	if m.SelectPayload && m.PayloadCursor < len(m.Payload) {
+		m.PayloadCursor++
+	} else if m.SelectAuth && m.AuthTokenCursor < len(m.AuthToken) {
+		m.AuthTokenCursor++
+	} else if m.SelectPayloadMenu && m.PayloadMenu < 1 {
+		m.PayloadMenu++
+	} else if m.SelectURL && m.Cursor < len(m.URL) {
+		m.Cursor++
+	} else if !m.SelectURL && !m.SelectPayload && !m.SelectAuth && !m.SelectPayloadMenu && m.SelectedMethod < 3 {
+		m.SelectedMethod++
+	}
+	return m, nil
 
-	case "up":
-		if m.SelectPayload {
-			lastNewline := strings.LastIndex(m.Payload[:m.PayloadCursor], "\n")
-			if lastNewline != -1 {
-				prevNewline := strings.LastIndex(m.Payload[:lastNewline], "\n")
-				colPos := m.PayloadCursor - lastNewline - 1
-				if prevNewline == -1 {
-					m.PayloadCursor = min(colPos, lastNewline)
-				} else {
-					lineLen := lastNewline - prevNewline - 1
-					m.PayloadCursor = prevNewline + 1 + min(colPos, lineLen)
-				}
+case "up":
+	if m.SelectPayload {
+		lastNewline := strings.LastIndex(m.Payload[:m.PayloadCursor], "\n")
+		if lastNewline != -1 {
+			prevNewline := strings.LastIndex(m.Payload[:lastNewline], "\n")
+			colPos := m.PayloadCursor - lastNewline - 1
+			if prevNewline == -1 {
+				m.PayloadCursor = min(colPos, lastNewline)
+			} else {
+				lineLen := lastNewline - prevNewline - 1
+				m.PayloadCursor = prevNewline + 1 + min(colPos, lineLen)
 			}
-		} else if m.SelectURL {
-			m.SelectURL = false
 		}
-		return m, nil
+	} else if m.SelectAuth {
+		lastNewline := strings.LastIndex(m.AuthToken[:m.AuthTokenCursor], "\n")
+		if lastNewline != -1 {
+			prevNewline := strings.LastIndex(m.AuthToken[:lastNewline], "\n")
+			colPos := m.AuthTokenCursor - lastNewline - 1
+			if prevNewline == -1 {
+				m.AuthTokenCursor = min(colPos, lastNewline)
+			} else {
+				lineLen := lastNewline - prevNewline - 1
+				m.AuthTokenCursor = prevNewline + 1 + min(colPos, lineLen)
+			}
+		}
+	} else if m.SelectPayloadMenu {
+		m.SelectPayloadMenu = false
+		m.SelectURL = true
+	} else if m.SelectURL {
+		m.SelectURL = false
+	}
+	return m, nil
 
 	case "down":
 		if m.SelectPayload {
@@ -121,11 +192,29 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 					m.PayloadCursor = nextNewline + 1 + min(colPos, lineLen)
 				}
 			}
-		} else if !m.SelectURL {
-			m.SelectURL = true
-		} else if  m.SelectURL && (m.SelectedMethod == 1 || m.SelectedMethod == 2){
+		} else if m.SelectAuth {
+			lastNewline := strings.LastIndex(m.AuthToken[:m.AuthTokenCursor], "\n")
+			colPos := m.AuthTokenCursor - lastNewline - 1
+			nextNewline := strings.Index(m.AuthToken[m.AuthTokenCursor:], "\n")
+			if nextNewline != -1 {
+				nextNewline += m.AuthTokenCursor
+				nextNextNewline := strings.Index(m.AuthToken[nextNewline+1:], "\n")
+				if nextNextNewline == -1 {
+					lineLen := len(m.AuthToken) - nextNewline - 1
+					m.AuthTokenCursor = nextNewline + 1 + min(colPos, lineLen)
+				} else {
+					nextNextNewline += nextNewline + 1
+					lineLen := nextNextNewline - nextNewline - 1
+					m.AuthTokenCursor = nextNewline + 1 + min(colPos, lineLen)
+				}
+			}
+		} else if m.SelectPayloadMenu {
+			return m, nil
+		} else if m.SelectURL {
 			m.SelectURL = false
-			m.SelectPayload = true
+			m.SelectPayloadMenu = true
+		} else if !m.SelectURL && !m.SelectPayloadMenu {
+			m.SelectURL = true
 		}
 		return m, nil
 		
@@ -133,6 +222,13 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.SelectPayload {
 			m.SelectPayload = false
 			m.SelectURL = true
+			return m, nil
+		}
+
+		if m.SelectAuth {
+			m.SelectAuth = false
+			m.SelectPayloadMenu = true
+			return m, nil
 		}
 
 		if m.ShowResponse {

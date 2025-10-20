@@ -19,12 +19,23 @@ type Model struct {
 	Width int
 	Height int
 	SelectedMethod int
-	SelectedOperation string
 	SelectURL bool
+
+
 	ShowResponse bool
+
+
 	Payload string
 	PayloadCursor int
 	SelectPayload bool
+
+	AuthToken string
+	AuthTokenCursor int
+	SelectAuth bool
+	PayloadMenu int
+	SelectPayloadMenu bool
+
+
 	Spinner spinner.Model
 	ShowHistory bool
 	History []types.HistoryItem
@@ -62,10 +73,13 @@ func NewModel() Model {
 		SelectURL: false,
 		ShowResponse: false,
 		SelectPayload: false,
+		PayloadMenu: 0,
 		Spinner: s,
 		ShowHistory: false,
 		History: history,
 		HistoryList: historyList,
+		SelectPayloadMenu: false,
+		SelectAuth: false,
 	}
 }
 

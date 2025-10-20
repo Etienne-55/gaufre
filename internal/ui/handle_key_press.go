@@ -73,6 +73,9 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		} else if  m.SelectURL && len(m.URL) > 0 && m.Cursor > 0 {
 			m.URL = m.URL[:m.Cursor-1] + m.URL[m.Cursor:]
 			m.Cursor--
+		} else if m.SelectAuth && len(m.AuthToken) > 0 && m.PayloadCursor > 0 {
+			m.AuthToken = m.AuthToken[:m.AuthTokenCursor-1] + m.AuthToken[m.AuthTokenCursor:]
+			m.AuthTokenCursor--
 		}
 		return m, nil
 

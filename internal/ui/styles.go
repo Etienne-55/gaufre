@@ -74,10 +74,15 @@ func RenderURLInput(url string, cursor int, focused bool) string {
 	if focused {
 		urlStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(lipgloss.Color("#874BFD")).
+			// Background(lipgloss.Color("#874BFD")).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#00FF00")).
 			Padding(0, 1)
 	} else {
-		urlStyle = InputStyle
+		urlStyle = InputStyle.
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#874BFD")).
+			Padding(0, 1)
 	}
 
 	return urlStyle.Render(urlLabel + urlWithCursor)

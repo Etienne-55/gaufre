@@ -45,13 +45,10 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 
 		if m.SelectPayloadMenu {
-			// Pressed enter on payload menu - open selected editor
 			m.SelectPayloadMenu = false
 			if m.PayloadMenu == 0 {
-				// Selected Body
 				m.SelectPayload = true
 			} else {
-				// Selected Auth
 				m.SelectAuth = true
 			}
 			return m, nil
@@ -63,46 +60,11 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.ShowResponse = false
 			methods := []string{"GET", "POST", "PUT", "DELETE"}
 			return m, tea.Batch(
-				// http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload, m.AuthToken),
 				http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload),
 				m.Spinner.Tick,
 			)
 		}
 		return m, nil
-	// case "enter":
-	//
-	// 	if m.SelectPayload {
-	// 		m.Payload = m.Payload[:m.PayloadCursor] + "\n" + m.Payload[m.PayloadCursor:]
-	// 		m.PayloadCursor++
-	// 		return m, nil
-	// 	}
-	//
-	// 	// if m.SelectPayload {
-	// 	// 	m.SelectPayload = false
-	// 	// 	m.SelectURL = true
-	// 	// 	return m, nil
-	// 	// }
-	// 	if m.SelectPayload {
-	// 		m.SelectPayload = false
-	// 		if m.PayloadMenu == 0 {
-	// 			m.SelectPayload = true
-	// 		} else {
-	// 			m.SelectAuth = true
-	// 		}
-	// 		return m, nil
-	// 	}
-	//
-	// 	if m.SelectURL && !m.Loading {
-	// 		m.Loading = true
-	// 		m.Response = nil
-	// 		m.ShowResponse = false
-	// 		methods := []string{"GET", "POST", "PUT", "DELETE"}
-	// 		return m, tea.Batch( 
-	// 		http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload),
-	// 		m.Spinner.Tick,
-	// 		)
-	// 	}
-	// 	return m, nil
 
 	case "backspace":
 		if m.SelectPayload && len(m.Payload) > 0 && m.PayloadCursor > 0 {

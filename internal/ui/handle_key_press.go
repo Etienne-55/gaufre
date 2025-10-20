@@ -19,10 +19,18 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	
 	case "ctrl+v":
-		if text, err := clipboard.ReadAll();
-		err == nil {
-		m.Payload = m.Payload[:m.PayloadCursor] + text + m.Payload[m.PayloadCursor:]
-		m.PayloadCursor += len(text)
+		if m.SelectPayload {
+			if text, err := clipboard.ReadAll();
+			err == nil {
+			m.Payload = m.Payload[:m.PayloadCursor] + text + m.Payload[m.PayloadCursor:]
+			m.PayloadCursor += len(text)
+			}
+		} else if m.SelectAuth {
+			if text, err := clipboard.ReadAll();
+			err == nil {
+			m.AuthToken = m.AuthToken[:m.AuthTokenCursor] + text + m.AuthToken[m.AuthTokenCursor:]
+			m.AuthTokenCursor += len(text)
+			}
 		}
 		return m, nil
 

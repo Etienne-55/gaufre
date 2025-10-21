@@ -76,7 +76,7 @@ func RenderURLInput(url string, cursor int, focused bool) string {
 			Foreground(lipgloss.Color("#FFFFFF")).
 			// Background(lipgloss.Color("#874BFD")).
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#00FF00")).
+			BorderForeground(lipgloss.Color("#4ECDC4")).
 			Padding(0, 1)
 	} else {
 		urlStyle = InputStyle.

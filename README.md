@@ -4,7 +4,6 @@ A terminal-based API client built with Go and Bubble Tea.
 Designed for developers who live in the terminal.
 Works seamlessly with tmux and neovim workflows.
 
-## Screenshot
 
 ![](assets/screenshot.png)
 

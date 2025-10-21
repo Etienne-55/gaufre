@@ -68,7 +68,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.ShowResponse = false
 			methods := []string{"GET", "POST", "PUT", "DELETE"}
 			return m, tea.Batch(
-				http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload),
+				http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload, m.AuthToken),
 				m.Spinner.Tick,
 			)
 		}
@@ -79,7 +79,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.ShowResponse = false
 			methods := []string{"GET", "POST", "PUT", "DELETE"}
 			return m, tea.Batch(
-				http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload),
+				http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload, m.AuthToken),
 				m.Spinner.Tick,
 			)
 		}

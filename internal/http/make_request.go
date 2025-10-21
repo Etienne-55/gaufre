@@ -10,7 +10,7 @@ type ResponseMsg struct {
 	Response *types.Response
 }
 
-func MakeRequest(method string, url string, payload string) tea.Cmd {
+func MakeRequest(method string, url string, payload string, authToken string) tea.Cmd {
 	return func() tea.Msg {
 		var response *types.Response
 
@@ -18,7 +18,7 @@ func MakeRequest(method string, url string, payload string) tea.Cmd {
 		case "GET":
 			response = MakeGetRequest(url)
 		case "POST":
-			response = MakePostRequest(url, payload)
+			response = MakePostRequest(url, payload, authToken)
 		case "PUT":
 			response = MakePutRequest(url, payload)
 		case "DELETE":

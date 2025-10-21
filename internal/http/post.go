@@ -1,23 +1,22 @@
 package http
 
 import (
-	"io"
-	"time"
 	"bytes"
-	"net/http"
 	"gaufre/internal/types"
+	"io"
+	"net/http"
+	"strings"
+	"time"
 )
 
 
-func MakePostRequest(url string, jsonBody string) *types.Response {
+func MakePostRequest(url string, jsonBody string, authToken string) *types.Response {
 	start := time.Now()
-
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
 
 	payload := bytes.NewBufferString(jsonBody)
-
 	req, err := http.NewRequest("POST", url, payload)
 	if err != nil {
 		return &types.Response{
@@ -26,6 +25,10 @@ func MakePostRequest(url string, jsonBody string) *types.Response {
 		}
 	}
 	req.Header.Set("Content-type", "application/json")
+
+	if authToken != "" {
+		req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(authToken))
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {

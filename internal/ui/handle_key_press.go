@@ -72,6 +72,18 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.Spinner.Tick,
 			)
 		}
+
+		if  m.SelectedMethod == 0 || m.SelectedMethod == 1 || m.SelectedMethod == 2 || m.SelectedMethod == 3 {
+			m.Loading = true
+			m.Response = nil
+			m.ShowResponse = false
+			methods := []string{"GET", "POST", "PUT", "DELETE"}
+			return m, tea.Batch(
+				http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload),
+				m.Spinner.Tick,
+			)
+		}
+
 		return m, nil
 
 	case "backspace":

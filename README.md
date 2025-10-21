@@ -6,7 +6,7 @@ Works seamlessly with tmux and neovim workflows.
 
 ## Screenshot
 
-![Gaufre Screenshot](assets/screenshot.png)
+![](assets/screenshot.png)
 
 ## Features
 

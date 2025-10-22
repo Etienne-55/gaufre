@@ -160,6 +160,7 @@ func (m Model) renderResponseScreen() string {
 	boxStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#874BFD")).
+		Width(60).
 		Padding(1, 2)
 
 	boxedContent := boxStyle.Render(content)

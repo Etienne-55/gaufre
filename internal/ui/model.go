@@ -46,7 +46,7 @@ type Model struct {
 }
 
 func NewModel() Model {
-	defaultURL := "http://localhost:8080/events"
+	defaultURL := "http://localhost:"
 
 	s := spinner.New()
 	s.Spinner = spinner.Dot

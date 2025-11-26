@@ -15,6 +15,11 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case "tab":
+	if m.SelectPayload {
+		m.Payload = m.Payload[:m.PayloadCursor] + "\t" + m.Payload[m.PayloadCursor:]
+		m.PayloadCursor++
+		return m, nil
+		}
 		m.ShowHistory = !m.ShowHistory
 		return m, nil
 	

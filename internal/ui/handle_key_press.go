@@ -38,6 +38,15 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		clipboard.WriteAll(m.Payload)
 		return m, nil
 
+	case "ctrl+d":
+		if m.SelectAuth {
+			m.AuthToken = "" 
+			m.AuthTokenCursor = 0
+		} else if m.SelectPayload {
+			m.Payload = ""
+			m.PayloadCursor = 0
+		}
+		return m, nil
 
 	case "enter":
 		if m.SelectPayload {

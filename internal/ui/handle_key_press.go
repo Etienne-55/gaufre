@@ -23,26 +23,54 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.ShowHistory = !m.ShowHistory
 		return m, nil
 	
-	case "ctrl+v":
-		if m.SelectPayload {
-			if text, err := clipboard.ReadAll();
-			err == nil {
+		case "ctrl+v":
+	if m.SelectPayload {
+		if text, err := clipboard.ReadAll(); err == nil {
 			m.Payload = m.Payload[:m.PayloadCursor] + text + m.Payload[m.PayloadCursor:]
 			m.PayloadCursor += len(text)
-			}
-		} else if m.SelectAuth {
-			if text, err := clipboard.ReadAll();
-			err == nil {
-			m.AuthToken = m.AuthToken[:m.AuthTokenCursor] + text + m.AuthToken[m.AuthTokenCursor:]
-			m.AuthTokenCursor += len(text)
-			}
 		}
-		return m, nil
+	} else if m.SelectAuth {
+		if text, err := clipboard.ReadAll(); err == nil {
+			cleanText := text
+			if strings.Contains(text, `"token"`) {
+				start := strings.Index(text, `"token"`)
+				if start != -1 {
+					start = strings.Index(text[start:], `"`)
+					if start != -1 {
+						start = strings.Index(text[start+1:], `"`)
+						if start != -1 {
+							cleanText = text[start+1:]
+						}
+					}
+				}
+			}
+			
+			var filteredText strings.Builder
+			for _, char := range cleanText {
+				if (char >= 'A' && char <= 'Z') || 
+				   (char >= 'a' && char <= 'z') || 
+				   (char >= '0' && char <= '9') || 
+				   char == '-' || char == '_' || char == '.' {
+					filteredText.WriteRune(char)
+				}
+			}
+			
+			cleanText = filteredText.String()
+			
+			m.AuthToken = m.AuthToken[:m.AuthTokenCursor] + cleanText + m.AuthToken[m.AuthTokenCursor:]
+			m.AuthTokenCursor += len(cleanText)
+		}
+	}
+	return m, nil
 
 	case "ctrl+c":
-		clipboard.WriteAll(m.Payload)
+		if m.SelectAuth {
+			clipboard.WriteAll(m.AuthToken)
+		} else if m.SelectPayload {
+			clipboard.WriteAll(m.Payload)
+		}
 		return m, nil
-
+		
 	case "ctrl+d":
 		if m.SelectAuth {
 			m.AuthToken = "" 

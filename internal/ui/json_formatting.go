@@ -55,10 +55,16 @@ func (m Model) highlightJSON(jsonStr string) string {
 		return keyStyle.Render(match[:len(match)-1]) + punctStyle.Render(":")
 	})
 	
-	stringRegex := regexp.MustCompile(`:\s*"([^"]*)"`)
+	stringRegex := regexp.MustCompile(`:\s*"([^"\\]*(?:\\.[^"\\]*)*)"`)
 	result = stringRegex.ReplaceAllStringFunc(result, func(match string) string {
-		parts := strings.SplitN(match, `"`, 2)
-		return parts[0] + stringStyle.Render(`"`+strings.TrimSuffix(parts[1], `"`)+`"`)
+		colonIdx := strings.Index(match, ":")
+		firstQuoteIdx := strings.Index(match[colonIdx:], `"`) + colonIdx
+		lastQuoteIdx := strings.LastIndex(match, `"`)
+		
+		prefix := match[:firstQuoteIdx]
+		stringContent := match[firstQuoteIdx : lastQuoteIdx+1]
+		
+		return prefix + stringStyle.Render(stringContent)
 	})
 	
 	numberRegex := regexp.MustCompile(`:\s*(-?\d+\.?\d*)`)

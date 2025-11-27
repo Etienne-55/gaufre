@@ -73,7 +73,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.HistoryList.SetItems(items)
 		}
-		m.Viewport = viewport.New(m.Width-10, m.Height-10)
+		m.Viewport = viewport.New(200, m.Height-10)
 		m.Viewport.SetContent(m.renderResponseContent())
 		m.ViewportReady = true
 		m.ShowResponse = true

@@ -148,21 +148,27 @@ func (m Model) renderResponseScreen() string {
 	if !m.ViewportReady {
 		return "Loading..."
 	}
-
-	help := HelpStyle.Render("↑↓/j/k: scroll | Esc: back | q: quit")
-
-	content := lipgloss.JoinVertical(lipgloss.Center,
+	help := HelpStyle.Render("↑↓/j/k: scroll | ←→: horizontal scroll | Esc: back | q: quit")
+	content := lipgloss.JoinVertical(lipgloss.Left, 
 		m.Viewport.View(),
 		"",
 		help,
 	)
-
+	
+	boxWidth := m.Width - 10
+	if boxWidth < 80 {
+		boxWidth = 80
+	}
+	if boxWidth > 150 {
+		boxWidth = 150
+	}
+	
 	boxStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#874BFD")).
-		Width(60).
+		Width(boxWidth).
 		Padding(1, 2)
-
+	
 	boxedContent := boxStyle.Render(content)
 	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
 }

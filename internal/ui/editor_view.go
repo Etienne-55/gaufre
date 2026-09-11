@@ -11,7 +11,7 @@ import (
 // requestContext is the "POST http://localhost:3000/users" line shown in the
 // top-right of both editors, so you can see what you're editing for.
 func (m Model) requestContext() string {
-	return Methods[m.SelectedMethod] + " " + m.URL
+	return Methods[m.SelectedMethod] + " " + m.URLInput.Value()
 }
 
 func (m Model) renderPayloadScreen() string {

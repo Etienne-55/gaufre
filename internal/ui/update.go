@@ -14,19 +14,36 @@ import (
 )
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// Window resizes affect every screen (history list size, response
-	// viewport size, ...), so handle them before dispatching by screen.
-	if sizeMsg, ok := msg.(tea.WindowSizeMsg); ok {
-		return m.handleWindowSize(sizeMsg), nil
-	}
+	// Some messages matter whatever screen is showing, so they are handled
+	// before dispatching by screen.
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		// Resizes affect every screen (history list size, response
+		// viewport size, ...).
+		return m.handleWindowSize(msg), nil
 
-	// A status message's expiry can land after its editor was left, so it
-	// is handled globally rather than per screen.
-	if expired, ok := msg.(statusExpiredMsg); ok {
-		if expired.seq == m.StatusSeq {
+	case statusExpiredMsg:
+		// A status message's expiry can land after its screen was left.
+		if msg.seq == m.StatusSeq {
 			m.Status = ""
 		}
 		return m, nil
+
+	case http.ResponseMsg:
+		// A response can arrive after you've moved on to the history or an
+		// editor while it was in flight. Dispatching it by screen used to
+		// drop it there, leaving Loading stuck and every later send ignored.
+		return m.handleResponse(msg), nil
+
+	case spinner.TickMsg:
+		// Likewise the spinner has to keep ticking off the main screen, but
+		// should stop once the request is done rather than tick forever.
+		if !m.Loading {
+			return m, nil
+		}
+		var cmd tea.Cmd
+		m.Spinner, cmd = m.Spinner.Update(msg)
+		return m, cmd
 	}
 
 	switch m.Screen {
@@ -42,50 +59,54 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateAuthEditor(msg)
 	}
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		return m.handleMainKeyPress(msg)
-
-	case spinner.TickMsg:
-		var cmd tea.Cmd
-		m.Spinner, cmd = m.Spinner.Update(msg)
-		return m, cmd
-
-	case http.ResponseMsg:
-		m.Loading = false
-		m.Response = msg.Response
-		m.ResponseTokens = findResponseTokens(m.Response)
-		m.TokenCursor = 0
-		if m.Response != nil && m.Response.Error == nil {
-			histItem := types.HistoryItem{
-				Method:    Methods[m.SelectedMethod],
-				URL:       m.URL,
-				Payload:   m.PayloadArea.Value(),
-				Response:  m.Response.StatusCode,
-				Timestamp: time.Now(),
-			}
-			m.History = append([]types.HistoryItem{histItem}, m.History...)
-
-			storage.SaveHistory(m.History)
-			items := make([]list.Item, len(m.History))
-			for i, h := range m.History {
-				items[i] = h
-			}
-			m.HistoryList.SetItems(items)
-		}
-		m.Viewport = viewport.New(200, m.Height-10)
-		m.Viewport.SetContent(m.renderResponseContent())
-		m.ViewportReady = true
-		m.Screen = ScreenResponse
-		return m, nil
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		return m.handleMainKeyPress(keyMsg)
 	}
 	return m, nil
+}
+
+// handleResponse records a finished request in the history and shows its
+// response, from whichever screen you were on.
+func (m Model) handleResponse(msg http.ResponseMsg) Model {
+	m.Loading = false
+	m.Response = msg.Response
+	m.ResponseTokens = findResponseTokens(m.Response)
+	m.TokenCursor = 0
+
+	if m.Response != nil && m.Response.Error == nil {
+		histItem := types.HistoryItem{
+			Method:    Methods[m.SelectedMethod],
+			URL:       m.URLInput.Value(),
+			Payload:   m.PayloadArea.Value(),
+			Response:  m.Response.StatusCode,
+			Timestamp: time.Now(),
+		}
+		m.History = append([]types.HistoryItem{histItem}, m.History...)
+
+		storage.SaveHistory(m.History)
+		items := make([]list.Item, len(m.History))
+		for i, h := range m.History {
+			items[i] = h
+		}
+		m.HistoryList.SetItems(items)
+	}
+
+	m.PayloadArea.Blur()
+	m.AuthInput.Blur()
+	m.Status = ""
+
+	width, height := m.responseViewportSize()
+	m.Viewport = viewport.New(width, height)
+	m.Viewport.SetContent(m.renderResponseContent(width))
+	m.Screen = ScreenResponse
+	return m
 }
 
 func (m Model) handleWindowSize(msg tea.WindowSizeMsg) Model {
 	m.Width = msg.Width
 	m.Height = msg.Height
-	m.HistoryList.SetSize(msg.Width-4, msg.Height-10)
+	m.HistoryList.SetSize(m.historyListSize())
+	m.URLInput.Width = m.urlInputWidth()
 
 	// Size the editors to the terminal: a fixed-size textarea either
 	// overflowed small terminals or wasted most of a large one.
@@ -94,23 +115,11 @@ func (m Model) handleWindowSize(msg tea.WindowSizeMsg) Model {
 	m.PayloadArea.SetHeight(m.editorBodyHeight())
 	m.AuthInput.Width = editorWidth - len(authPrompt) - 1
 
-	// The token picker sits on top of the response viewer, so keep the
-	// viewport sized for when it is closed again.
-	if m.Screen == ScreenResponse || m.Screen == ScreenTokenPicker {
-		headerHeight := 4
-		footerHeight := 3
-		verticalMargin := headerHeight + footerHeight
-
-		if !m.ViewportReady {
-			m.Viewport = viewport.New(msg.Width-10, msg.Height-verticalMargin)
-			m.ViewportReady = true
-			if m.Response != nil {
-				m.Viewport.SetContent(m.renderResponse())
-			}
-		} else {
-			m.Viewport.Width = msg.Width - 10
-			m.Viewport.Height = msg.Height - verticalMargin
-		}
+	// The response is re-wrapped to the new width. This also covers the
+	// token picker, which sits on top of the response viewer.
+	if m.Response != nil {
+		m.Viewport.Width, m.Viewport.Height = m.responseViewportSize()
+		m.Viewport.SetContent(m.renderResponseContent(m.Viewport.Width))
 	}
 
 	return m

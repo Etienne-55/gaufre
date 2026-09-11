@@ -3,31 +3,11 @@ package ui
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/lipgloss"
 )
-
-func (m Model) renderResponse() string {
-	resp := m.Response
-	if resp.Error != nil {
-		return ErrorStyle.Render(fmt.Sprintf("Error: %v", resp.Error))
-	}
-	statusColor := SuccessStyle
-	if resp.StatusCode >= 400 {
-		statusColor = ErrorStyle
-	}
-	header := fmt.Sprintf("Status: %s | Time: %v",
-		statusColor.Render(fmt.Sprintf("%d", resp.StatusCode)),
-		resp.ResponseTime.Round(time.Millisecond))
-
-	formattedBody := m.formatResponseBody(resp.Body)
-
-	return fmt.Sprintf("%s\n\n%s", header, formattedBody)
-}
 
 func (m Model) formatResponseBody(body string) string {
 	trimmed := strings.TrimSpace(body)

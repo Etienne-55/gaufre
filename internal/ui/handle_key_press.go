@@ -1,8 +1,12 @@
 package ui
 
 import (
+	"strings"
+
 	"gaufre/internal/http"
+
 	"github.com/atotto/clipboard"
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -11,57 +15,18 @@ import (
 // response viewer each own their input handling in their own file, since
 // each is really a separate screen with its own key semantics.
 func (m Model) handleMainKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-
-	case "q":
+	switch {
+	case key.Matches(msg, MainKeys.ForceQuit):
 		return m, tea.Quit
 
-	case "tab":
+	case key.Matches(msg, MainKeys.History):
 		m.Screen = ScreenHistory
 		return m, nil
 
-	case "ctrl+v":
-		if m.MainFocus == FocusURL {
-			if text, err := clipboard.ReadAll(); err == nil {
-				m.URL = m.URL[:m.Cursor] + text + m.URL[m.Cursor:]
-				m.Cursor += len(text)
-			}
-		}
-		return m, nil
-
-	case "enter":
+	case key.Matches(msg, MainKeys.Enter):
 		return m.handleMainEnter()
 
-	case "backspace":
-		if m.MainFocus == FocusURL && len(m.URL) > 0 && m.Cursor > 0 {
-			m.URL = m.URL[:m.Cursor-1] + m.URL[m.Cursor:]
-			m.Cursor--
-		}
-		return m, nil
-
-	case "left":
-		switch {
-		case m.MainFocus == FocusPayloadMenu && m.PayloadMenu > 0:
-			m.PayloadMenu--
-		case m.MainFocus == FocusURL && m.Cursor > 0:
-			m.Cursor--
-		case m.MainFocus == FocusMethod && m.SelectedMethod > 0:
-			m.SelectedMethod--
-		}
-		return m, nil
-
-	case "right":
-		switch {
-		case m.MainFocus == FocusPayloadMenu && m.PayloadMenu < 1:
-			m.PayloadMenu++
-		case m.MainFocus == FocusURL && m.Cursor < len(m.URL):
-			m.Cursor++
-		case m.MainFocus == FocusMethod && m.SelectedMethod < len(Methods)-1:
-			m.SelectedMethod++
-		}
-		return m, nil
-
-	case "up":
+	case key.Matches(msg, MainKeys.Up):
 		switch m.MainFocus {
 		case FocusPayloadMenu:
 			m.MainFocus = FocusURL
@@ -70,7 +35,7 @@ func (m Model) handleMainKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case "down":
+	case key.Matches(msg, MainKeys.Down):
 		switch m.MainFocus {
 		case FocusMethod:
 			m.MainFocus = FocusURL
@@ -78,26 +43,55 @@ func (m Model) handleMainKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.MainFocus = FocusPayloadMenu
 		}
 		return m, nil
+	}
 
-	case "home":
-		if m.MainFocus == FocusURL {
-			m.Cursor = 0
-		}
-		return m, nil
+	// While the URL has focus every other key is text: "q" has to type a q
+	// (think "?q=search"), not quit.
+	if m.MainFocus == FocusURL {
+		return m.updateURLInput(msg)
+	}
 
-	case "end":
-		if m.MainFocus == FocusURL {
-			m.Cursor = len(m.URL)
-		}
-		return m, nil
+	switch {
+	case key.Matches(msg, MainKeys.Quit):
+		return m, tea.Quit
 
-	default:
-		if m.MainFocus == FocusURL && len(msg.String()) == 1 {
-			m.URL = m.URL[:m.Cursor] + msg.String() + m.URL[m.Cursor:]
-			m.Cursor++
+	case key.Matches(msg, MainKeys.Choose):
+		step := 1
+		if msg.String() == "left" {
+			step = -1
 		}
+		switch m.MainFocus {
+		case FocusMethod:
+			m.SelectedMethod = clampInt(m.SelectedMethod+step, 0, len(Methods)-1)
+		case FocusPayloadMenu:
+			m.PayloadMenu = clampInt(m.PayloadMenu+step, 0, 1)
+		}
+	}
+
+	return m, nil
+}
+
+// updateURLInput forwards a key to the URL field. Pasting is handled here
+// rather than by the textinput so a URL copied with a trailing newline, or
+// wrapped across lines, doesn't end up with spaces in it.
+func (m Model) updateURLInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if msg.String() == "ctrl+v" {
+		text, err := clipboard.ReadAll()
+		if err != nil {
+			return m, nil
+		}
+		text = strings.Join(strings.Fields(text), "")
+
+		value := []rune(m.URLInput.Value())
+		pos := m.URLInput.Position()
+		m.URLInput.SetValue(string(value[:pos]) + text + string(value[pos:]))
+		m.URLInput.SetCursor(pos + len([]rune(text)))
 		return m, nil
 	}
+
+	var cmd tea.Cmd
+	m.URLInput, cmd = m.URLInput.Update(msg)
+	return m, cmd
 }
 
 // handleMainEnter opens the selected Body/Auth editor, or sends the request
@@ -121,7 +115,7 @@ func (m Model) handleMainEnter() (tea.Model, tea.Cmd) {
 	m.Loading = true
 	m.Response = nil
 	return m, tea.Batch(
-		http.MakeRequest(Methods[m.SelectedMethod], m.URL, m.PayloadArea.Value(), m.AuthInput.Value()),
+		http.MakeRequest(Methods[m.SelectedMethod], m.URLInput.Value(), m.PayloadArea.Value(), m.AuthInput.Value()),
 		m.Spinner.Tick,
 	)
 }

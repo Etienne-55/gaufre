@@ -24,7 +24,7 @@ func testJWT(t *testing.T, claims map[string]any) string {
 
 func sizedModel(width, height int) Model {
 	m := NewModel()
-	m.URL = "http://localhost:3000/api/v1/users"
+	m.URLInput.SetValue("http://localhost:3000/api/v1/users")
 	m.SelectedMethod = 1
 	next, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: height})
 	return next.(Model)

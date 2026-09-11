@@ -4,6 +4,7 @@ import (
 	"gaufre/internal/storage"
 	"gaufre/internal/types"
 
+	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -46,8 +47,10 @@ type Model struct {
 	Screen    Screen
 	MainFocus MainFocus
 
-	URL    string
-	Cursor int
+	// URLInput is the request URL field. Like the token field it is a
+	// textinput, so editing gets proper cursor movement, word deletion and
+	// horizontal scrolling for long URLs.
+	URLInput textinput.Model
 
 	Response *types.Response
 	Loading  bool
@@ -75,11 +78,35 @@ type Model struct {
 	Status    string
 	StatusSeq int
 
-	Spinner       spinner.Model
-	History       []types.HistoryItem
-	HistoryList   list.Model
-	Viewport      viewport.Model
-	ViewportReady bool
+	Spinner     spinner.Model
+	History     []types.HistoryItem
+	HistoryList list.Model
+	Viewport    viewport.Model
+
+	// ShowHeaders lists the response headers above the body. It is a
+	// preference, so it carries over from one response to the next.
+	ShowHeaders bool
+}
+
+// newURLInput builds the URL field. It stays focused for its whole life:
+// keys only reach it while the URL has focus on the main screen, and the
+// view hides its cursor the rest of the time.
+func newURLInput(url string) textinput.Model {
+	ti := textinput.New()
+	ti.Prompt = "URL: "
+	ti.Placeholder = "https://api.example.com/..."
+	ti.CharLimit = 0
+	ti.Width = urlMinWidth
+
+	ti.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF"))
+	ti.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF"))
+	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(ColorMuted)
+	ti.Cursor.SetMode(cursor.CursorStatic)
+
+	ti.Focus()
+	ti.SetValue(url)
+	ti.CursorEnd()
+	return ti
 }
 
 // newPayloadArea builds the multi-line JSON body editor.
@@ -154,8 +181,7 @@ func NewModel() Model {
 	return Model{
 		Screen:      ScreenMain,
 		MainFocus:   FocusMethod,
-		URL:         defaultURL,
-		Cursor:      len(defaultURL),
+		URLInput:    newURLInput(defaultURL),
 		PayloadArea: newPayloadArea(),
 		AuthInput:   newAuthInput(),
 		Help:        helpModel,

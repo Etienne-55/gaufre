@@ -1,6 +1,10 @@
 package ui
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 var LogoStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF00FF"))
 
@@ -13,7 +17,9 @@ func RenderLogo() string {
 ╚██████╔╝██║  ██║╚██████╔╝██║     ██║  ██║███████╗
  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝  ╚═╝╚══════╝
 	`
-	return LogoStyle.Render(logo)
+	// The raw string opens and closes on blank lines; spacing around the
+	// logo is the main screen's job.
+	return LogoStyle.Render(strings.Trim(logo, "\n\t"))
 }
 
 // 	logo := `

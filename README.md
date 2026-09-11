@@ -15,6 +15,8 @@ Works seamlessly with tmux and neovim workflows.
 - **JWT inspection** - Pasted tokens are decoded in place: algorithm, subject, issuer, audience, and expiry with an expired warning
 - **Use a token from the response** - Press `t` on a login response and its token becomes the Bearer token for the next request; when a response holds several (access, refresh, id token...), a picker shows each one decoded so you can choose
 - **Smart token paste** - Paste a whole auth response (`{"access_token": "..."}`), a `Bearer ...` header, or a token copied across wrapped lines; Gaufre extracts the token
+- **Request summary** - The main screen warns before you send when the bearer token has expired, or when a body won't be sent with a GET
+- **Response details** - Status and reason phrase, time, size and content type stay pinned above the body while you scroll; toggle the headers with `h`
 - **JSON syntax highlighting** - Response formatting
 - **Live JSON validation** - The body editor reports validity and the line/column of the first error as you type
 - **Body formatting** - Pretty-print the request body with `Ctrl+F`
@@ -37,15 +39,17 @@ go build -o gaufre
 ### Keyboard Shortcuts
 
 **Main Screen:**
-- `↑↓` - Navigate between method selector and URL
-- `←→` - Change HTTP method
-- `Enter` - Send request
+- `↑↓` - Navigate between method selector, URL and the Body/Auth menu
+- `←→` - Change HTTP method (or choose Body/Auth)
+- `Enter` - Send request (or open the selected editor)
 - `Tab` - Open history
-- `q` - Quit
+- `q` - Quit (`Ctrl+C` while typing a URL)
 
 **URL Input:**
-- Type to edit URL
-- `Home/End` - Move to start/end
+- Type to edit the URL — every letter types, including `q`
+- `←→`, `Home/End` - Move the cursor; `Alt+←/→` by word
+- `Ctrl+W` - Delete the previous word; `Ctrl+U`/`Ctrl+K` delete to the start/end
+- `Ctrl+V` - Paste (line breaks from a wrapped copy are removed)
 - `↑` - Back to method selector
 - `↓` - Go to request editor
 
@@ -74,10 +78,12 @@ go build -o gaufre
 - `/` - To filter requests 
 - `↑↓` - Navigate
 - `Enter` - Load request
-- `Esc` - Close history
+- `Esc` - Clear the filter, then close history
 
 **Response Viewer:**
-- `↑↓` or `j/k` - Scroll
+- `↑↓` or `j/k` - Scroll; `Space`/`b` by page, `d`/`u` by half page
+- `g`/`G` - Jump to the top/bottom
+- `h` - Show or hide the response headers
 - `t` - Use the token found in the response as the auth token (opens the token picker when there are several)
 - `Esc` - Back to main screen
 

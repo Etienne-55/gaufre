@@ -158,7 +158,7 @@ func NewModel() Model {
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
-	historyList := list.New([]list.Item{}, list.NewDefaultDelegate(), 80, 20)
+	historyList := list.New([]list.Item{}, newHistoryDelegate(), 80, 20)
 	historyList.Title = "Request History"
 	historyList.SetFilteringEnabled(true)
 	historyList.SetShowStatusBar(false)

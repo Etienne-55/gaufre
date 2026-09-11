@@ -12,6 +12,8 @@ func (m Model) View() string {
 		if m.Response != nil {
 			return m.renderResponseScreen()
 		}
+	case ScreenTokenPicker:
+		return m.renderTokenPickerScreen()
 	case ScreenHistory:
 		return m.renderHistoryScreen()
 	case ScreenPayloadEditor:
@@ -78,10 +80,10 @@ func (m Model) renderResponseScreen() string {
 	if !m.ViewportReady {
 		return "Loading..."
 	}
-	help := HelpStyle.Render("↑↓/j/k: scroll | ←→: horizontal scroll | Esc: back | q: quit")
+	help := HelpStyle.Render(m.responseHelp())
 	content := lipgloss.JoinVertical(lipgloss.Left,
 		m.Viewport.View(),
-		"",
+		m.renderResponseStatus(),
 		help,
 	)
 
@@ -101,6 +103,29 @@ func (m Model) renderResponseScreen() string {
 
 	boxedContent := boxStyle.Render(content)
 	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, boxedContent)
+}
+
+// responseHelp only advertises the token shortcut when the response
+// actually holds a token, so it doubles as a "there's a token here" hint.
+func (m Model) responseHelp() string {
+	help := "↑↓/j/k: scroll | ←→: horizontal scroll | "
+	switch n := len(m.ResponseTokens); {
+	case n == 1:
+		help += "t: use token | "
+	case n > 1:
+		help += fmt.Sprintf("t: pick token (%d) | ", n)
+	}
+	return help + "Esc: back | q: quit"
+}
+
+// renderResponseStatus fills the blank line above the help with the result
+// of the last action (token set, nothing found, ...), so the frame keeps
+// the same height either way.
+func (m Model) renderResponseStatus() string {
+	if m.Status == "" {
+		return ""
+	}
+	return EditorOKStyle.Render(m.Status)
 }
 
 func (m Model) renderResponseContent() string {

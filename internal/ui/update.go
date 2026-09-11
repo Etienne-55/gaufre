@@ -34,6 +34,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateHistoryList(msg)
 	case ScreenResponse:
 		return m.updateResponseViewport(msg)
+	case ScreenTokenPicker:
+		return m.updateTokenPicker(msg)
 	case ScreenPayloadEditor:
 		return m.updatePayloadEditor(msg)
 	case ScreenAuthEditor:
@@ -52,6 +54,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case http.ResponseMsg:
 		m.Loading = false
 		m.Response = msg.Response
+		m.ResponseTokens = findResponseTokens(m.Response)
+		m.TokenCursor = 0
 		if m.Response != nil && m.Response.Error == nil {
 			histItem := types.HistoryItem{
 				Method:    Methods[m.SelectedMethod],
@@ -90,7 +94,9 @@ func (m Model) handleWindowSize(msg tea.WindowSizeMsg) Model {
 	m.PayloadArea.SetHeight(m.editorBodyHeight())
 	m.AuthInput.Width = editorWidth - len(authPrompt) - 1
 
-	if m.Screen == ScreenResponse {
+	// The token picker sits on top of the response viewer, so keep the
+	// viewport sized for when it is closed again.
+	if m.Screen == ScreenResponse || m.Screen == ScreenTokenPicker {
 		headerHeight := 4
 		footerHeight := 3
 		verticalMargin := headerHeight + footerHeight

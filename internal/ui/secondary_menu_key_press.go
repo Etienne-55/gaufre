@@ -59,8 +59,12 @@ func (m Model) updateResponseViewport(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.Screen = ScreenMain
 			m.Response = nil
+			m.ResponseTokens = nil
+			m.Status = ""
 			m.ViewportReady = false
 			return m, nil
+		case "t":
+			return m.openTokenPicker()
 		}
 	}
 

@@ -29,6 +29,7 @@ const (
 	ScreenAuthEditor
 	ScreenHistory
 	ScreenResponse
+	ScreenTokenPicker
 )
 
 // MainFocus identifies which control on the main screen has focus. It is
@@ -50,6 +51,12 @@ type Model struct {
 
 	Response *types.Response
 	Loading  bool
+
+	// ResponseTokens are the token-looking values found in Response, best
+	// first, so the response viewer can offer them to the auth editor.
+	// TokenCursor is the selected entry while the token picker is open.
+	ResponseTokens []tokenCandidate
+	TokenCursor    int
 
 	Width  int
 	Height int

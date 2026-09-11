@@ -13,6 +13,7 @@ Works seamlessly with tmux and neovim workflows.
 - **Request history** - Saved locally with fuzzy search
 - **Authentication support** - Bearer token on every method
 - **JWT inspection** - Pasted tokens are decoded in place: algorithm, subject, issuer, audience, and expiry with an expired warning
+- **Use a token from the response** - Press `t` on a login response and its token becomes the Bearer token for the next request; when a response holds several (access, refresh, id token...), a picker shows each one decoded so you can choose
 - **Smart token paste** - Paste a whole auth response (`{"access_token": "..."}`), a `Bearer ...` header, or a token copied across wrapped lines; Gaufre extracts the token
 - **JSON syntax highlighting** - Response formatting
 - **Live JSON validation** - The body editor reports validity and the line/column of the first error as you type
@@ -77,7 +78,14 @@ go build -o gaufre
 
 **Response Viewer:**
 - `↑↓` or `j/k` - Scroll
+- `t` - Use the token found in the response as the auth token (opens the token picker when there are several)
 - `Esc` - Back to main screen
+
+**Token Picker:**
+- `↑↓` or `j/k` - Choose a token — each one shows where it was found and, for JWTs, its subject and expiry
+- `Enter` - Use it as the auth token
+- `c` - Copy it to the clipboard
+- `Esc` - Back to the response
 
 ## Configuration
 

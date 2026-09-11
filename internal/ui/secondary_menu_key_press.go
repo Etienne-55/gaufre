@@ -5,27 +5,17 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-
 func (m Model) updateHistoryList(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
+	// While the list's own filter input is active, every key (including
+	// q/tab, which otherwise quit or navigate away) belongs to the filter
+	// text and must be forwarded to the list instead of intercepted here.
+	if key, ok := msg.(tea.KeyMsg); ok && m.HistoryList.FilterState() != list.Filtering {
+		switch key.String() {
 		case "q":
 			return m, tea.Quit
 
-		case "esc":
-
-			if m.HistoryList.FilterState() == list.Filtering {
-				var cmd tea.Cmd
-				m.HistoryList, cmd = m.HistoryList.Update(msg)
-				return m, cmd
-			}
-
-			m.ShowHistory = false
-			return m, nil
-
-		case "tab":
-			m.ShowHistory = false
+		case "esc", "tab":
+			m.Screen = ScreenMain
 			return m, nil
 
 		case "enter":
@@ -35,19 +25,17 @@ func (m Model) updateHistoryList(msg tea.Msg) (tea.Model, tea.Cmd) {
 					item := m.History[selectedIdx]
 					m.URL = item.URL
 					m.Cursor = len(m.URL)
-					m.Payload = item.Payload
-					m.PayloadCursor = len(m.Payload)
-		
-					methods := []string{"GET", "POST", "PUT", "DELETE"}
-					for i , method := range methods {
+					m.PayloadArea.SetValue(item.Payload)
+
+					for i, method := range Methods {
 						if method == item.Method {
 							m.SelectedMethod = i
 							break
 						}
 					}
 
-					m.ShowHistory = false
-					m.SelectURL = true
+					m.Screen = ScreenMain
+					m.MainFocus = FocusURL
 					return m, nil
 				}
 			}
@@ -67,10 +55,10 @@ func (m Model) updateResponseViewport(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q":
-		 	return m, tea.Quit
+			return m, tea.Quit
 		case "esc":
-			m.ShowResponse = false
-			m.Response = nil 
+			m.Screen = ScreenMain
+			m.Response = nil
 			m.ViewportReady = false
 			return m, nil
 		}
@@ -79,4 +67,3 @@ func (m Model) updateResponseViewport(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.Viewport, cmd = m.Viewport.Update(msg)
 	return m, cmd
 }
-

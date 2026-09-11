@@ -11,10 +11,14 @@ Works seamlessly with tmux and neovim workflows.
 
 - **Multiple HTTP methods** - GET, POST, PUT, DELETE
 - **Request history** - Saved locally with fuzzy search
-- **Authentication support** - Bearer token authentication
+- **Authentication support** - Bearer token on every method
+- **JWT inspection** - Pasted tokens are decoded in place: algorithm, subject, issuer, audience, and expiry with an expired warning
+- **Smart token paste** - Paste a whole auth response (`{"access_token": "..."}`), a `Bearer ...` header, or a token copied across wrapped lines; Gaufre extracts the token
 - **JSON syntax highlighting** - Response formatting
+- **Live JSON validation** - The body editor reports validity and the line/column of the first error as you type
+- **Body formatting** - Pretty-print the request body with `Ctrl+F`
 - **Scrollable responses** - Handle large API responses
-- **Request editor** - Multiline JSON body editing
+- **Request editor** - Multiline JSON body editing with line numbers
 - **Persistent storage** - History saved between sessions
 
 ## Installation
@@ -49,6 +53,22 @@ go build -o gaufre
 - `Enter` - Open selected editor
 - `↑` - Back to main screen
 
+**Body Editor:**
+- Type to edit — the status line shows JSON validity live
+- `Ctrl+F` - Format (pretty-print) the body
+- `Tab` - Indent two spaces
+- `Ctrl+V` - Paste from clipboard
+- `Ctrl+C` - Copy the body
+- `Ctrl+D` - Clear the body
+- `Esc` - Back to main screen
+
+**Auth Editor:**
+- Type to edit — JWTs are decoded and summarised below the field
+- `Ctrl+V` - Paste a token, extracting it from a JSON response, a `Bearer` header, or a line-wrapped copy
+- `Ctrl+C` - Copy the token
+- `Ctrl+D` - Clear the token
+- `Esc` - Back to main screen
+
 **History:**
 - `/` - To filter requests 
 - `↑↓` - Navigate
@@ -57,7 +77,7 @@ go build -o gaufre
 
 **Response Viewer:**
 - `↑↓` or `j/k` - Scroll
-- `Enter/Esc` - Back to main screen
+- `Esc` - Back to main screen
 
 ## Configuration
 

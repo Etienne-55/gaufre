@@ -1,48 +1,120 @@
 package ui
 
 import (
-	"gaufre/internal/types"
 	"gaufre/internal/storage"
-	"github.com/charmbracelet/lipgloss"
+	"gaufre/internal/types"
+
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
+// Methods is the ordered list of HTTP methods the method selector cycles
+// through. SelectedMethod is an index into it; kept as a single shared list
+// so every screen that needs the method names (sending a request, matching
+// a history entry back to its method, ...) stays in sync.
+var Methods = []string{"GET", "POST", "PUT", "DELETE"}
+
+// Screen identifies which full-screen view is currently active.
+type Screen int
+
+const (
+	ScreenMain Screen = iota
+	ScreenPayloadEditor
+	ScreenAuthEditor
+	ScreenHistory
+	ScreenResponse
+)
+
+// MainFocus identifies which control on the main screen has focus. It is
+// only meaningful while Screen == ScreenMain.
+type MainFocus int
+
+const (
+	FocusMethod MainFocus = iota
+	FocusURL
+	FocusPayloadMenu
+)
 
 type Model struct {
-	URL      string
+	Screen    Screen
+	MainFocus MainFocus
+
+	URL    string
+	Cursor int
+
 	Response *types.Response
 	Loading  bool
-	Cursor   int
-	Width int
+
+	Width  int
 	Height int
+
 	SelectedMethod int
-	SelectURL bool
 
+	PayloadArea textarea.Model
+	AuthInput   textinput.Model
+	PayloadMenu int // 0 = Body, 1 = Auth
 
-	ShowResponse bool
+	Help help.Model
 
+	// Status is a transient message shown in the editors' status line after
+	// an action (copy, paste, format). StatusSeq lets a pending expiry tick
+	// know whether it is clearing its own message or a newer one.
+	Status    string
+	StatusSeq int
 
-	Payload string
-	PayloadCursor int
-	SelectPayload bool
-
-	AuthToken string
-	AuthTokenCursor int
-	SelectAuth bool
-
-	PayloadMenu int
-	SelectPayloadMenu bool
-
-
-	Spinner spinner.Model
-	ShowHistory bool
-	History []types.HistoryItem
-	HistoryList list.Model
-	Viewport viewport.Model
+	Spinner       spinner.Model
+	History       []types.HistoryItem
+	HistoryList   list.Model
+	Viewport      viewport.Model
 	ViewportReady bool
+}
+
+// newPayloadArea builds the multi-line JSON body editor.
+func newPayloadArea() textarea.Model {
+	ta := textarea.New()
+	ta.Placeholder = "{\n  \"key\": \"value\"\n}"
+	ta.ShowLineNumbers = true
+	ta.Prompt = ""
+	ta.CharLimit = 0
+	ta.SetWidth(editorMinContentWidth)
+	ta.SetHeight(editorMinBodyHeight)
+
+	ta.FocusedStyle.Base = lipgloss.NewStyle()
+	ta.FocusedStyle.Text = lipgloss.NewStyle().Foreground(ColorText)
+	ta.FocusedStyle.CursorLine = lipgloss.NewStyle().Foreground(ColorText)
+	ta.FocusedStyle.LineNumber = lipgloss.NewStyle().Foreground(ColorMuted)
+	ta.FocusedStyle.CursorLineNumber = lipgloss.NewStyle().Foreground(ColorAccent)
+	ta.FocusedStyle.Placeholder = lipgloss.NewStyle().Foreground(ColorMuted)
+	ta.FocusedStyle.EndOfBuffer = lipgloss.NewStyle().Foreground(ColorBackground)
+	ta.BlurredStyle = ta.FocusedStyle
+
+	ta.Blur()
+	return ta
+}
+
+// newAuthInput builds the bearer token field. A token is a single-line
+// value, so this is a textinput (which scrolls horizontally) rather than a
+// textarea: a multi-line widget both wrapped long tokens across lines and
+// allowed newlines that would produce an invalid Authorization header.
+func newAuthInput() textinput.Model {
+	ti := textinput.New()
+	ti.Placeholder = "paste a token with ctrl+v, or start typing"
+	ti.Prompt = authPrompt
+	ti.CharLimit = 0
+	ti.Width = editorMinContentWidth - len(authPrompt) - 1
+
+	ti.PromptStyle = lipgloss.NewStyle().Foreground(ColorMuted)
+	ti.TextStyle = lipgloss.NewStyle().Foreground(ColorText)
+	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(ColorMuted)
+
+	ti.Blur()
+	return ti
 }
 
 func NewModel() Model {
@@ -67,24 +139,25 @@ func NewModel() Model {
 		historyList.SetItems(items)
 	}
 
+	helpModel := help.New()
+	helpModel.Styles.ShortKey = lipgloss.NewStyle().Foreground(ColorAccent)
+	helpModel.Styles.ShortDesc = lipgloss.NewStyle().Foreground(ColorMuted)
+	helpModel.Styles.ShortSeparator = lipgloss.NewStyle().Foreground(ColorMuted)
+
 	return Model{
-		URL:    defaultURL,
-		Cursor: len(defaultURL),
-		SelectedMethod: 0,
-		SelectURL: false,
-		ShowResponse: false,
-		SelectPayload: false,
-		PayloadMenu: 0,
-		Spinner: s,
-		ShowHistory: false,
-		History: history,
+		Screen:      ScreenMain,
+		MainFocus:   FocusMethod,
+		URL:         defaultURL,
+		Cursor:      len(defaultURL),
+		PayloadArea: newPayloadArea(),
+		AuthInput:   newAuthInput(),
+		Help:        helpModel,
+		Spinner:     s,
+		History:     history,
 		HistoryList: historyList,
-		SelectPayloadMenu: false,
-		SelectAuth: false,
 	}
 }
 
 func (m Model) Init() tea.Cmd {
 	return nil
 }
-

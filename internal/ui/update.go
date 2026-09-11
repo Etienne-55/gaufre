@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"time"
+
 	"gaufre/internal/http"
 	"gaufre/internal/storage"
 	"gaufre/internal/types"
@@ -11,61 +13,55 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-
-	if m.ShowHistory {
-		return m.updateHistoryList(msg)
+	// Window resizes affect every screen (history list size, response
+	// viewport size, ...), so handle them before dispatching by screen.
+	if sizeMsg, ok := msg.(tea.WindowSizeMsg); ok {
+		return m.handleWindowSize(sizeMsg), nil
 	}
 
-	if m.ShowResponse {
+	// A status message's expiry can land after its editor was left, so it
+	// is handled globally rather than per screen.
+	if expired, ok := msg.(statusExpiredMsg); ok {
+		if expired.seq == m.StatusSeq {
+			m.Status = ""
+		}
+		return m, nil
+	}
+
+	switch m.Screen {
+	case ScreenHistory:
+		return m.updateHistoryList(msg)
+	case ScreenResponse:
 		return m.updateResponseViewport(msg)
+	case ScreenPayloadEditor:
+		return m.updatePayloadEditor(msg)
+	case ScreenAuthEditor:
+		return m.updateAuthEditor(msg)
 	}
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		return m.handleKeyPress(msg)
+		return m.handleMainKeyPress(msg)
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		m.Spinner, cmd = m.Spinner.Update(msg)
 		return m, cmd
 
-	case tea.WindowSizeMsg: 
-		m.Width = msg.Width
-		m.Height = msg.Height
-		m.HistoryList.SetSize(msg.Width-4, msg.Height-10)
-
-		if m.ShowResponse {
-			headerHeight := 4
-			footerHeight := 3
-			verticalMargin := headerHeight + footerHeight
-
-			if !m.ViewportReady {
-				m.Viewport = viewport.New(msg.Width-10, msg.Height-verticalMargin)
-				m.ViewportReady = true
-				if m.Response != nil {
-					m.Viewport.SetContent(m.renderResponse())
-				}
-			} else {
-				m.Viewport.Width = msg.Width - 10
-				m.Viewport.Height = msg.Height - verticalMargin
-			}
-		}
-		return m, nil
-
 	case http.ResponseMsg:
 		m.Loading = false
 		m.Response = msg.Response
 		if m.Response != nil && m.Response.Error == nil {
-			methods := []string{"GET", "POST", "PUT", "DELETE"}
 			histItem := types.HistoryItem{
-				Method: methods[m.SelectedMethod],
-				URL: m.URL,
-				Payload: m.Payload,
+				Method:    Methods[m.SelectedMethod],
+				URL:       m.URL,
+				Payload:   m.PayloadArea.Value(),
+				Response:  m.Response.StatusCode,
+				Timestamp: time.Now(),
 			}
 			m.History = append([]types.HistoryItem{histItem}, m.History...)
-	
+
 			storage.SaveHistory(m.History)
 			items := make([]list.Item, len(m.History))
 			for i, h := range m.History {
@@ -76,16 +72,40 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Viewport = viewport.New(200, m.Height-10)
 		m.Viewport.SetContent(m.renderResponseContent())
 		m.ViewportReady = true
-		m.ShowResponse = true
+		m.Screen = ScreenResponse
 		return m, nil
 	}
 	return m, nil
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
+func (m Model) handleWindowSize(msg tea.WindowSizeMsg) Model {
+	m.Width = msg.Width
+	m.Height = msg.Height
+	m.HistoryList.SetSize(msg.Width-4, msg.Height-10)
 
+	// Size the editors to the terminal: a fixed-size textarea either
+	// overflowed small terminals or wasted most of a large one.
+	editorWidth := m.editorContentWidth()
+	m.PayloadArea.SetWidth(editorWidth)
+	m.PayloadArea.SetHeight(m.editorBodyHeight())
+	m.AuthInput.Width = editorWidth - len(authPrompt) - 1
+
+	if m.Screen == ScreenResponse {
+		headerHeight := 4
+		footerHeight := 3
+		verticalMargin := headerHeight + footerHeight
+
+		if !m.ViewportReady {
+			m.Viewport = viewport.New(msg.Width-10, msg.Height-verticalMargin)
+			m.ViewportReady = true
+			if m.Response != nil {
+				m.Viewport.SetContent(m.renderResponse())
+			}
+		} else {
+			m.Viewport.Width = msg.Width - 10
+			m.Viewport.Height = msg.Height - verticalMargin
+		}
+	}
+
+	return m
+}

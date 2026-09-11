@@ -1,296 +1,127 @@
 package ui
 
 import (
-	"strings"
 	"gaufre/internal/http"
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-
-func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+// handleMainKeyPress handles input for the main screen only (method
+// selector, URL bar, Body/Auth menu). Payload/Auth editing, history and the
+// response viewer each own their input handling in their own file, since
+// each is really a separate screen with its own key semantics.
+func (m Model) handleMainKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 
 	case "q":
 		return m, tea.Quit
 
 	case "tab":
-	if m.SelectPayload {
-		m.Payload = m.Payload[:m.PayloadCursor] + "\t" + m.Payload[m.PayloadCursor:]
-		m.PayloadCursor++
+		m.Screen = ScreenHistory
 		return m, nil
-		}
-		m.ShowHistory = !m.ShowHistory
-		return m, nil
-	
-		case "ctrl+v":
-	if m.SelectPayload {
-		if text, err := clipboard.ReadAll(); err == nil {
-			m.Payload = m.Payload[:m.PayloadCursor] + text + m.Payload[m.PayloadCursor:]
-			m.PayloadCursor += len(text)
-		}
-	} else if m.SelectAuth {
-		if text, err := clipboard.ReadAll(); err == nil {
-			cleanText := text
-			if strings.Contains(text, `"token"`) {
-				start := strings.Index(text, `"token"`)
-				if start != -1 {
-					start = strings.Index(text[start:], `"`)
-					if start != -1 {
-						start = strings.Index(text[start+1:], `"`)
-						if start != -1 {
-							cleanText = text[start+1:]
-						}
-					}
-				}
-			}
-			
-			var filteredText strings.Builder
-			for _, char := range cleanText {
-				if (char >= 'A' && char <= 'Z') || 
-				   (char >= 'a' && char <= 'z') || 
-				   (char >= '0' && char <= '9') || 
-				   char == '-' || char == '_' || char == '.' {
-					filteredText.WriteRune(char)
-				}
-			}
-			
-			cleanText = filteredText.String()
-			
-			m.AuthToken = m.AuthToken[:m.AuthTokenCursor] + cleanText + m.AuthToken[m.AuthTokenCursor:]
-			m.AuthTokenCursor += len(cleanText)
-		}
-	}
-	return m, nil
 
-	case "ctrl+c":
-		if m.SelectAuth {
-			clipboard.WriteAll(m.AuthToken)
-		} else if m.SelectPayload {
-			clipboard.WriteAll(m.Payload)
-		}
-		return m, nil
-		
-	case "ctrl+d":
-		if m.SelectAuth {
-			m.AuthToken = "" 
-			m.AuthTokenCursor = 0
-		} else if m.SelectPayload {
-			m.Payload = ""
-			m.PayloadCursor = 0
+	case "ctrl+v":
+		if m.MainFocus == FocusURL {
+			if text, err := clipboard.ReadAll(); err == nil {
+				m.URL = m.URL[:m.Cursor] + text + m.URL[m.Cursor:]
+				m.Cursor += len(text)
+			}
 		}
 		return m, nil
 
 	case "enter":
-		if m.SelectPayload {
-			m.Payload = m.Payload[:m.PayloadCursor] + "\n" + m.Payload[m.PayloadCursor:]
-			m.PayloadCursor++
-			return m, nil
-		}
-
-		if m.SelectAuth {
-			m.AuthToken = m.AuthToken[:m.AuthTokenCursor] + "\n" + m.AuthToken[m.AuthTokenCursor:]
-			m.AuthTokenCursor++
-			return m, nil
-		}
-
-		if m.SelectPayloadMenu {
-			m.SelectPayloadMenu = false
-			if m.PayloadMenu == 0 {
-				m.SelectPayload = true
-			} else {
-				m.SelectAuth = true
-			}
-			return m, nil
-		}
-
-		if m.SelectURL && !m.Loading {
-			m.Loading = true
-			m.Response = nil
-			m.ShowResponse = false
-			methods := []string{"GET", "POST", "PUT", "DELETE"}
-			return m, tea.Batch(
-				http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload, m.AuthToken),
-				m.Spinner.Tick,
-			)
-		}
-
-		if  m.SelectedMethod == 0 || m.SelectedMethod == 1 || m.SelectedMethod == 2 || m.SelectedMethod == 3 {
-			m.Loading = true
-			m.Response = nil
-			m.ShowResponse = false
-			methods := []string{"GET", "POST", "PUT", "DELETE"}
-			return m, tea.Batch(
-				http.MakeRequest(methods[m.SelectedMethod], m.URL, m.Payload, m.AuthToken),
-				m.Spinner.Tick,
-			)
-		}
-
-		return m, nil
+		return m.handleMainEnter()
 
 	case "backspace":
-		if m.SelectPayload && len(m.Payload) > 0 && m.PayloadCursor > 0 {
-			m.Payload = m.Payload[:m.PayloadCursor-1] + m.Payload[m.PayloadCursor:]
-			m.PayloadCursor--
-		} else if  m.SelectURL && len(m.URL) > 0 && m.Cursor > 0 {
+		if m.MainFocus == FocusURL && len(m.URL) > 0 && m.Cursor > 0 {
 			m.URL = m.URL[:m.Cursor-1] + m.URL[m.Cursor:]
 			m.Cursor--
-		} else if m.SelectAuth && len(m.AuthToken) > 0 && m.PayloadCursor > 0 {
-			m.AuthToken = m.AuthToken[:m.AuthTokenCursor-1] + m.AuthToken[m.AuthTokenCursor:]
-			m.AuthTokenCursor--
 		}
 		return m, nil
 
-case "left":
-	if m.SelectPayload && m.PayloadCursor > 0 {
-		m.PayloadCursor--
-	} else if m.SelectAuth && m.AuthTokenCursor > 0 {
-		m.AuthTokenCursor--
-	} else if m.SelectPayloadMenu && m.PayloadMenu > 0 {
-		m.PayloadMenu--
-	} else if m.SelectURL && m.Cursor > 0 {
-		m.Cursor--
-	} else if !m.SelectURL && !m.SelectPayload && !m.SelectAuth && !m.SelectPayloadMenu && m.SelectedMethod > 0 {
-		m.SelectedMethod--
-	}
-	return m, nil
-
-case "right":
-	if m.SelectPayload && m.PayloadCursor < len(m.Payload) {
-		m.PayloadCursor++
-	} else if m.SelectAuth && m.AuthTokenCursor < len(m.AuthToken) {
-		m.AuthTokenCursor++
-	} else if m.SelectPayloadMenu && m.PayloadMenu < 1 {
-		m.PayloadMenu++
-	} else if m.SelectURL && m.Cursor < len(m.URL) {
-		m.Cursor++
-	} else if !m.SelectURL && !m.SelectPayload && !m.SelectAuth && !m.SelectPayloadMenu && m.SelectedMethod < 3 {
-		m.SelectedMethod++
-	}
-	return m, nil
-
-case "up":
-	if m.SelectPayload {
-		lastNewline := strings.LastIndex(m.Payload[:m.PayloadCursor], "\n")
-		if lastNewline != -1 {
-			prevNewline := strings.LastIndex(m.Payload[:lastNewline], "\n")
-			colPos := m.PayloadCursor - lastNewline - 1
-			if prevNewline == -1 {
-				m.PayloadCursor = min(colPos, lastNewline)
-			} else {
-				lineLen := lastNewline - prevNewline - 1
-				m.PayloadCursor = prevNewline + 1 + min(colPos, lineLen)
-			}
+	case "left":
+		switch {
+		case m.MainFocus == FocusPayloadMenu && m.PayloadMenu > 0:
+			m.PayloadMenu--
+		case m.MainFocus == FocusURL && m.Cursor > 0:
+			m.Cursor--
+		case m.MainFocus == FocusMethod && m.SelectedMethod > 0:
+			m.SelectedMethod--
 		}
-	} else if m.SelectAuth {
-		lastNewline := strings.LastIndex(m.AuthToken[:m.AuthTokenCursor], "\n")
-		if lastNewline != -1 {
-			prevNewline := strings.LastIndex(m.AuthToken[:lastNewline], "\n")
-			colPos := m.AuthTokenCursor - lastNewline - 1
-			if prevNewline == -1 {
-				m.AuthTokenCursor = min(colPos, lastNewline)
-			} else {
-				lineLen := lastNewline - prevNewline - 1
-				m.AuthTokenCursor = prevNewline + 1 + min(colPos, lineLen)
-			}
+		return m, nil
+
+	case "right":
+		switch {
+		case m.MainFocus == FocusPayloadMenu && m.PayloadMenu < 1:
+			m.PayloadMenu++
+		case m.MainFocus == FocusURL && m.Cursor < len(m.URL):
+			m.Cursor++
+		case m.MainFocus == FocusMethod && m.SelectedMethod < len(Methods)-1:
+			m.SelectedMethod++
 		}
-	} else if m.SelectPayloadMenu {
-		m.SelectPayloadMenu = false
-		m.SelectURL = true
-	} else if m.SelectURL {
-		m.SelectURL = false
-	}
-	return m, nil
+		return m, nil
+
+	case "up":
+		switch m.MainFocus {
+		case FocusPayloadMenu:
+			m.MainFocus = FocusURL
+		case FocusURL:
+			m.MainFocus = FocusMethod
+		}
+		return m, nil
 
 	case "down":
-		if m.SelectPayload {
-			lastNewline := strings.LastIndex(m.Payload[:m.PayloadCursor], "\n")
-			colPos := m.PayloadCursor - lastNewline - 1
-			nextNewline := strings.Index(m.Payload[m.PayloadCursor:], "\n")
-			if nextNewline != -1 {
-				nextNewline += m.PayloadCursor
-				nextNextNewline := strings.Index(m.Payload[nextNewline+1:], "\n")
-				if nextNextNewline == -1 {
-					lineLen := len(m.Payload) - nextNewline - 1
-					m.PayloadCursor = nextNewline + 1 + min(colPos, lineLen)
-				} else {
-					nextNextNewline += nextNewline + 1
-					lineLen := nextNextNewline - nextNewline - 1
-					m.PayloadCursor = nextNewline + 1 + min(colPos, lineLen)
-				}
-			}
-		} else if m.SelectAuth {
-			lastNewline := strings.LastIndex(m.AuthToken[:m.AuthTokenCursor], "\n")
-			colPos := m.AuthTokenCursor - lastNewline - 1
-			nextNewline := strings.Index(m.AuthToken[m.AuthTokenCursor:], "\n")
-			if nextNewline != -1 {
-				nextNewline += m.AuthTokenCursor
-				nextNextNewline := strings.Index(m.AuthToken[nextNewline+1:], "\n")
-				if nextNextNewline == -1 {
-					lineLen := len(m.AuthToken) - nextNewline - 1
-					m.AuthTokenCursor = nextNewline + 1 + min(colPos, lineLen)
-				} else {
-					nextNextNewline += nextNewline + 1
-					lineLen := nextNextNewline - nextNewline - 1
-					m.AuthTokenCursor = nextNewline + 1 + min(colPos, lineLen)
-				}
-			}
-		} else if m.SelectPayloadMenu {
-			return m, nil
-		} else if m.SelectURL {
-			m.SelectURL = false
-			m.SelectPayloadMenu = true
-		} else if !m.SelectURL && !m.SelectPayloadMenu {
-			m.SelectURL = true
-		}
-		return m, nil
-		
-	case "esc":
-		if m.SelectPayload {
-			m.SelectPayload = false
-			m.SelectURL = true
-			return m, nil
-		}
-
-		if m.SelectAuth {
-			m.SelectAuth = false
-			m.SelectPayloadMenu = true
-			return m, nil
-		}
-
-		if m.ShowResponse {
-			m.ShowResponse = false
-			m.Response = nil
-			return m, nil
+		switch m.MainFocus {
+		case FocusMethod:
+			m.MainFocus = FocusURL
+		case FocusURL:
+			m.MainFocus = FocusPayloadMenu
 		}
 		return m, nil
 
 	case "home":
-		m.Cursor = 0
+		if m.MainFocus == FocusURL {
+			m.Cursor = 0
+		}
 		return m, nil
 
 	case "end":
-		m.Cursor = len(m.URL) 
+		if m.MainFocus == FocusURL {
+			m.Cursor = len(m.URL)
+		}
 		return m, nil
 
 	default:
-		if m.SelectPayload && len(msg.String()) == 1 {
-			m.Payload = m.Payload[:m.PayloadCursor] + msg.String() + m.Payload[m.PayloadCursor:]
-			m.PayloadCursor++
-			return m, nil
-		}
-		if m.SelectURL && len(msg.String()) == 1 {
+		if m.MainFocus == FocusURL && len(msg.String()) == 1 {
 			m.URL = m.URL[:m.Cursor] + msg.String() + m.URL[m.Cursor:]
 			m.Cursor++
-			return m, nil
 		}
-		if m.SelectAuth && len(msg.String()) == 1 {
-			m.AuthToken = m.AuthToken[:m.AuthTokenCursor] + msg.String() + m.AuthToken[m.AuthTokenCursor:]
-			m.AuthTokenCursor++
-			return m, nil
-		}
+		return m, nil
 	}
-
-	return m, nil
 }
 
+// handleMainEnter opens the selected Body/Auth editor, or sends the request
+// when focus is on the method selector or the URL bar.
+func (m Model) handleMainEnter() (tea.Model, tea.Cmd) {
+	if m.MainFocus == FocusPayloadMenu {
+		if m.PayloadMenu == 1 {
+			m.Screen = ScreenAuthEditor
+			m.AuthInput.Focus()
+		} else {
+			m.Screen = ScreenPayloadEditor
+			m.PayloadArea.Focus()
+		}
+		return m, nil
+	}
+
+	if m.Loading {
+		return m, nil
+	}
+
+	m.Loading = true
+	m.Response = nil
+	return m, tea.Batch(
+		http.MakeRequest(Methods[m.SelectedMethod], m.URL, m.PayloadArea.Value(), m.AuthInput.Value()),
+		m.Spinner.Tick,
+	)
+}

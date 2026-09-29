@@ -104,7 +104,7 @@ func (m Model) renderEditorFrame(width int, rows ...string) string {
 	const framePadding = 1
 
 	frame := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		Border(m.screenBorder()).
 		BorderForeground(ColorBorder).
 		Padding(0, framePadding).
 		Width(width + 2*framePadding)

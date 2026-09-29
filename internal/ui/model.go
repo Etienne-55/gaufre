@@ -64,6 +64,11 @@ type Model struct {
 	Width  int
 	Height int
 
+	// Popup is set when Gaufre runs inside a tmux popup (--popup). The
+	// popup's border already frames the app, so the screens hide their own
+	// outer box, and the mini logo is drawn in the bottom-right corner.
+	Popup bool
+
 	SelectedMethod int
 
 	PayloadArea textarea.Model

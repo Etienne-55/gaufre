@@ -89,3 +89,25 @@ func TestFormatBytes(t *testing.T) {
 		}
 	}
 }
+
+// A long value wraps under its own key rather than back at the left edge.
+func TestWrapHangingKeepsIndentation(t *testing.T) {
+	line := `    "access_token": "` + strings.Repeat("x", 100) + `"`
+	lines := strings.Split(wrapHanging(line, 40), "\n")
+	if len(lines) < 3 {
+		t.Fatalf("expected the value to wrap, got %d lines", len(lines))
+	}
+	for i, l := range lines {
+		plain := stripANSI(l)
+		if w := len([]rune(plain)); w > 40 {
+			t.Errorf("line %d is %d cells wide, want at most 40", i, w)
+		}
+		if i > 0 && !strings.HasPrefix(plain, "      ") {
+			t.Errorf("continuation line %d isn't indented under the key: %q", i, plain)
+		}
+	}
+
+	if got := wrapHanging("short\n  lines", 40); got != "short\n  lines" {
+		t.Errorf("lines that fit were changed: %q", got)
+	}
+}

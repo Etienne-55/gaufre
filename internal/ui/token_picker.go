@@ -6,13 +6,14 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 // tokenPickerRowsPerItem is how many lines each candidate takes in the
-// picker: its source and summary, then a preview of the token itself.
-const tokenPickerRowsPerItem = 2
+// picker: its source, what it decodes to, a preview of the token itself,
+// and the blank line before the next one.
+const tokenPickerRowsPerItem = 4
 
 // openTokenPicker is what "t" does in the response viewer. With a single
 // token in the response - the usual login response - it goes straight into
@@ -103,43 +104,64 @@ func (m Model) renderTokenPickerScreen() string {
 	return m.renderEditorFrame(width, rows...)
 }
 
-// renderTokenCandidates lists the candidates, scrolled so the selected one
-// is always on screen when there are more than the terminal can show.
+// renderTokenCandidates lists the candidates the way the history lists
+// requests - same styles, same selection bar - each as its source, what it
+// decodes to and the token itself, scrolled so the selected one is always
+// on screen when there are more than the terminal can show.
 func (m Model) renderTokenCandidates(width int) []string {
 	first, last := visibleWindow(len(m.ResponseTokens), m.TokenCursor, m.tokenPickerCapacity())
 	now := time.Now()
 	current := m.AuthInput.Value()
 
+	styles := list.NewDefaultDelegate().Styles
+	textWidth := width - styles.NormalTitle.GetPaddingLeft()
+
 	var rows []string
 	for i := first; i < last; i++ {
 		c := m.ResponseTokens[i]
-		selected := i == m.TokenCursor
 
-		marker := "  "
-		sourceStyle := EditorValueStyle
-		if selected {
-			marker = EditorTitleStyle.Render("› ")
-			sourceStyle = EditorTitleStyle
+		titleStyle, descStyle := styles.NormalTitle, styles.NormalDesc
+		if i == m.TokenCursor {
+			titleStyle, descStyle = styles.SelectedTitle, styles.SelectedDesc
 		}
 
-		summary, summaryStyle := describeToken(c.Token, now)
+		title := c.Source
 		if c.Token == current {
-			summary += " · in use"
+			title += " · in use"
 		}
 
-		// Source on the left, summary on the right, like the editors'
-		// title bar; the source gives way first on a narrow terminal.
-		source := sourceStyle.Render(truncateString(c.Source, maxInt(width-2-lipgloss.Width(summary)-2, 8)))
-		right := summaryStyle.Render(truncateString(summary, maxInt(width-2-lipgloss.Width(source)-1, 0)))
-		gap := maxInt(width-2-lipgloss.Width(source)-lipgloss.Width(right), 1)
+		// An expired or expiring token keeps its warning color whether or
+		// not it is selected.
+		summary, summaryStyle := describeToken(c.Token, now)
+		summaryLineStyle := descStyle
+		if fg := summaryStyle.GetForeground(); fg == ColorBad || fg == ColorWarn {
+			summaryLineStyle = descStyle.Foreground(fg)
+		}
 
+		if i > first {
+			rows = append(rows, "")
+		}
 		rows = append(rows,
-			marker+source+fmt.Sprintf("%*s", gap, "")+right,
-			"  "+EditorMetaStyle.Render(truncateString(c.Token, width-2)),
+			titleStyle.Render(truncateString(title, textWidth)),
+			summaryLineStyle.Render(truncateString(summary, textWidth)),
+			descStyle.Render(truncateMiddle(c.Token, textWidth)),
 		)
 	}
 
 	return rows
+}
+
+// truncateMiddle shortens s to max cells by cutting out its middle. Tokens
+// from one response often share a prefix - every JWT starts with much the
+// same header - so keeping the end as well tells them apart.
+func truncateMiddle(s string, max int) string {
+	runes := []rune(s)
+	if len(runes) <= max || max < 3 {
+		return truncateString(s, max)
+	}
+	head := max / 2
+	tail := max - head - 1 // one cell for the ellipsis
+	return string(runes[:head]) + "…" + string(runes[len(runes)-tail:])
 }
 
 func (m Model) renderTokenPickerStatus(width int) string {
@@ -151,12 +173,13 @@ func (m Model) renderTokenPickerStatus(width int) string {
 }
 
 // tokenPickerCapacity is how many candidates fit in the picker frame on the
-// current terminal. A negative result means the height is unknown.
+// current terminal. The last one has no blank line after it, hence the +1.
+// A negative result means the height is unknown.
 func (m Model) tokenPickerCapacity() int {
 	if m.Height <= 0 {
 		return -1
 	}
-	return maxInt(1, (m.Height-editorChromeRows)/tokenPickerRowsPerItem)
+	return maxInt(1, (m.Height-editorChromeRows+1)/tokenPickerRowsPerItem)
 }
 
 // visibleWindow returns the [first, last) range of a list of n items to

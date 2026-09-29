@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 )
 
 const (
@@ -25,29 +26,74 @@ const (
 )
 
 func (m Model) View() string {
+	view, hasLogo := m.renderScreen()
+	if m.Popup && !hasLogo {
+		view = m.stampCornerLogo(view)
+	}
+	return view
+}
 
+// renderScreen draws the active screen, reporting whether it shows the full
+// logo so the popup doesn't add the mini one alongside it.
+func (m Model) renderScreen() (view string, hasLogo bool) {
 	switch m.Screen {
 	case ScreenResponse:
 		if m.Response != nil {
-			return m.renderResponseScreen()
+			return m.renderResponseScreen(), false
 		}
 	case ScreenTokenPicker:
-		return m.renderTokenPickerScreen()
+		return m.renderTokenPickerScreen(), false
 	case ScreenHistory:
-		return m.renderHistoryScreen()
+		return m.renderHistoryScreen(), false
 	case ScreenPayloadEditor:
-		return m.renderPayloadScreen()
+		return m.renderPayloadScreen(), false
 	case ScreenAuthEditor:
-		return m.renderAuthscreen()
+		return m.renderAuthscreen(), false
 	}
 
 	return m.renderMainScreen()
 }
 
+// screenBorder is the border of each screen's outer box. In a tmux popup it
+// is hidden rather than removed: it keeps its size, so the layout is the
+// same either way, but only the popup's border is drawn.
+func (m Model) screenBorder() lipgloss.Border {
+	if m.Popup {
+		return lipgloss.HiddenBorder()
+	}
+	return lipgloss.RoundedBorder()
+}
+
+// stampCornerLogo draws the mini logo in the bottom-right corner of a
+// rendered screen, but only over rows that are blank: a screen that needs
+// the whole height keeps it, and the logo is left out.
+func (m Model) stampCornerLogo(view string) string {
+	const rightMargin = 1
+
+	logo := strings.Split(RenderMiniLogo(), "\n")
+	logoWidth := lipgloss.Width(RenderMiniLogo())
+	lines := strings.Split(view, "\n")
+	if len(lines) < len(logo) || m.Width < logoWidth+rightMargin {
+		return view
+	}
+
+	bottom := lines[len(lines)-len(logo):]
+	for _, line := range bottom {
+		if strings.TrimSpace(ansi.Strip(line)) != "" {
+			return view
+		}
+	}
+	indent := strings.Repeat(" ", m.Width-logoWidth-rightMargin)
+	for i, row := range logo {
+		bottom[i] = indent + row + strings.Repeat(" ", rightMargin)
+	}
+	return strings.Join(lines, "\n")
+}
+
 // renderMainScreen draws the main box, giving up the logo and then some
 // padding when the terminal is too small for the full layout - which used
 // to be taller than a 30-row terminal and lose its top border.
-func (m Model) renderMainScreen() string {
+func (m Model) renderMainScreen() (view string, hasLogo bool) {
 	layouts := []struct {
 		logo    bool
 		padding int // vertical; the sides always keep 2 columns
@@ -60,13 +106,13 @@ func (m Model) renderMainScreen() string {
 
 	var box string
 	for _, layout := range layouts {
-		box = m.renderMainBox(layout.logo, layout.padding)
+		box, hasLogo = m.renderMainBox(layout.logo, layout.padding), layout.logo
 		if m.Height <= 0 || (lipgloss.Height(box) <= m.Height && lipgloss.Width(box) <= m.Width) {
 			break
 		}
 	}
 
-	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, box)
+	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, box), hasLogo
 }
 
 func (m Model) renderMainBox(showLogo bool, padding int) string {
@@ -90,7 +136,7 @@ func (m Model) renderMainBox(showLogo bool, padding int) string {
 	)
 
 	boxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		Border(m.screenBorder()).
 		BorderForeground(lipgloss.Color("#874BFD")).
 		Padding(padding, 2)
 
@@ -196,7 +242,7 @@ func (m Model) mainHelp() helpBindings {
 
 func (m Model) renderHistoryScreen() string {
 	boxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		Border(m.screenBorder()).
 		BorderForeground(lipgloss.Color("#4ECDC4")).
 		Padding(1, 2).
 		Width(m.historyBoxWidth())

@@ -146,3 +146,28 @@ func TestVisibleWindow(t *testing.T) {
 		}
 	}
 }
+
+func TestTruncateMiddleKeepsBothEnds(t *testing.T) {
+	if got := truncateMiddle("abcdefghijklmnopqrstuvwxyz", 11); got != "abcde…vwxyz" {
+		t.Errorf("truncateMiddle = %q, want abcde…vwxyz", got)
+	}
+	if got := truncateMiddle("short", 11); got != "short" {
+		t.Errorf("truncateMiddle changed a string that fits: %q", got)
+	}
+}
+
+// Only the selected candidate carries the selection bar, as in the history.
+func TestTokenPickerMarksOnlyTheSelectedToken(t *testing.T) {
+	m := responseModel(t, 100, 30, `{"access_token":"first-token-value","id_token":"second-token-value"}`)
+	m = press(m, "t", "down")
+
+	var barred []string
+	for _, line := range strings.Split(stripANSI(m.View()), "\n") {
+		if inner := strings.TrimSpace(strings.Trim(strings.TrimSpace(line), "│")); strings.HasPrefix(inner, "│ ") {
+			barred = append(barred, strings.TrimPrefix(inner, "│ "))
+		}
+	}
+	if len(barred) != 3 || barred[0] != "id_token" || barred[2] != "second-token-value" {
+		t.Errorf("selection bar rows = %q, want the id_token card's three rows", barred)
+	}
+}

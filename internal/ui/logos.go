@@ -22,6 +22,13 @@ func RenderLogo() string {
 	return LogoStyle.Render(strings.Trim(logo, "\n\t"))
 }
 
+// RenderMiniLogo is the same neon logo shrunk to two rows, small enough to
+// sit in a corner of the tmux popup.
+func RenderMiniLogo() string {
+	return LogoStyle.Render("█▀▀ ▄▀█ █ █ █▀▀ █▀█ █▀▀\n" +
+		"█▄█ █▀█ █▄█ █▀  █▀▄ ██▄")
+}
+
 // 	logo := `
 //   	  ████████████████████████████      
 //   ███▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒███  

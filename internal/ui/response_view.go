@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 )
 
 const (
@@ -58,7 +59,33 @@ func (m Model) renderResponseContent(width int) string {
 		}
 	}
 
-	return lipgloss.NewStyle().Width(width).Render(content)
+	return wrapHanging(content, width)
+}
+
+// wrapHanging wraps each line to width, continuing it two columns in from
+// its own indentation. A long value - a JWT - used to wrap back to the left
+// edge, breaking the shape of the JSON around it.
+func wrapHanging(content string, width int) string {
+	var out []string
+	for _, line := range strings.Split(content, "\n") {
+		if lipgloss.Width(line) <= width {
+			out = append(out, line)
+			continue
+		}
+
+		plain := ansi.Strip(line)
+		indent := len(plain) - len(strings.TrimLeft(plain, " "))
+		hang := minInt(indent+2, width/2)
+
+		wrapped := strings.Split(lipgloss.NewStyle().Width(width-hang).Render(line), "\n")
+		for i, part := range wrapped {
+			if i > 0 {
+				part = strings.Repeat(" ", hang) + part
+			}
+			out = append(out, part)
+		}
+	}
+	return strings.Join(out, "\n")
 }
 
 func renderResponseHeaders(headers map[string][]string) string {
@@ -91,7 +118,7 @@ func (m Model) renderResponseScreen() string {
 	)
 
 	boxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		Border(m.screenBorder()).
 		BorderForeground(lipgloss.Color("#874BFD")).
 		Width(m.responseBoxWidth()).
 		Padding(1, 2)

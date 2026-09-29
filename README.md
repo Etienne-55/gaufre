@@ -36,6 +36,14 @@ go build -o gaufre
 ./gaufre
 ```
 
+### In a tmux popup
+Gaufre can float over your panes in a tmux popup (tmux 3.3+). With `--popup`
+it drops its own frame so the popup's border is the only one, and signs the
+bottom-right corner with a small logo. Add to `~/.tmux.conf`:
+```
+bind-key e display-popup -E -b rounded -S fg=magenta -T " Gaufre " -w 80% -h 80% "/path/to/gaufre --popup"
+```
+
 ### Keyboard Shortcuts
 
 **Main Screen:**
@@ -95,9 +103,11 @@ go build -o gaufre
 
 ## Configuration
 
-History is stored in:
-- **Linux/macOS:** `~/.url_history.json`
-- **Windows:** `%USERPROFILE%\.url_history.json`
+History is stored next to your other tools' configs:
+- **Linux/macOS:** `~/.config/gaufre/history.json` (or `$XDG_CONFIG_HOME/gaufre/history.json` when that is set)
+- **Windows:** `%USERPROFILE%\.config\gaufre\history.json`
+
+A history from older versions (`~/.url_history.json`) is moved there the first time Gaufre starts.
 
 Maximum history items: 100 (configurable in `internal/storage/history.go`)
 

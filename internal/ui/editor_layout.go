@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // Shared palette for the editor screens.
@@ -150,20 +151,14 @@ func renderFieldRow(width, labelWidth int, label, value string, valueStyle lipgl
 }
 
 // truncateString shortens s to at most max cells, marking the cut with an
-// ellipsis.
+// ellipsis. It measures cells rather than runes, so wide characters (CJK,
+// emoji) can't overflow, and keeps styled text's escape sequences whole:
+// cutting through them used to leave a color running into the next line.
 func truncateString(s string, max int) string {
 	if max <= 0 {
 		return ""
 	}
-
-	runes := []rune(s)
-	if len(runes) <= max {
-		return s
-	}
-	if max == 1 {
-		return "…"
-	}
-	return string(runes[:max-1]) + "…"
+	return ansi.Truncate(s, max, "…")
 }
 
 // trimRows shortens rows to at most budget entries, replacing the last kept

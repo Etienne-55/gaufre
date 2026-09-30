@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 // tokenFieldNames are the JSON keys commonly used to carry a bearer token in
@@ -70,18 +71,22 @@ func searchTokenField(node any, depth int) string {
 	case map[string]any:
 		// Prefer an exact, well-known field name at this level before
 		// descending, so {"token": "..."} wins over a nested match.
+		// Keys are visited in sorted order: Go's random map order used to
+		// pick a different token from the same paste from one run to the
+		// next.
+		keys := sortedKeys(v)
 		for _, name := range tokenFieldNames {
-			for key, value := range v {
+			for _, key := range keys {
 				if !strings.EqualFold(key, name) {
 					continue
 				}
-				if s, ok := value.(string); ok && strings.TrimSpace(s) != "" {
+				if s, ok := v[key].(string); ok && strings.TrimSpace(s) != "" {
 					return normalizeBareToken(s)
 				}
 			}
 		}
-		for _, value := range v {
-			if found := searchTokenField(value, depth+1); found != "" {
+		for _, key := range keys {
+			if found := searchTokenField(v[key], depth+1); found != "" {
 				return found
 			}
 		}
@@ -96,21 +101,33 @@ func searchTokenField(node any, depth int) string {
 	return ""
 }
 
-// normalizeBareToken strips a Bearer prefix, surrounding quotes/punctuation
-// and any whitespace that a line-wrapped copy introduced, without touching
-// the token's own characters.
+// normalizeBareToken strips an Authorization header name, a Bearer prefix,
+// surrounding quotes/punctuation and any whitespace that a line-wrapped copy
+// introduced, without touching the token's own characters.
 func normalizeBareToken(text string) string {
 	token := strings.TrimSpace(text)
-	token = strings.TrimPrefix(token, "Authorization:")
-	token = strings.TrimSpace(token)
-
-	if len(token) >= len("bearer ") && strings.EqualFold(token[:len("bearer ")], "bearer ") {
-		token = token[len("bearer "):]
-	}
-
+	// Header names are case-insensitive, and curl -v prints HTTP/2 ones in
+	// lower case.
+	token = strings.TrimSpace(trimPrefixFold(token, "authorization:"))
+	token = trimPrefixFold(token, "bearer ")
 	token = strings.Trim(token, surroundingJunk)
 
 	// Remove whitespace introduced by copying a token that was displayed
-	// across several lines.
-	return strings.Join(strings.Fields(token), "")
+	// across several lines, and any other control character: none can be
+	// sent in a header, and escape sequences would reach the terminal.
+	token = strings.Join(strings.Fields(token), "")
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return -1
+		}
+		return r
+	}, token)
+}
+
+// trimPrefixFold removes prefix from the start of s, ignoring case.
+func trimPrefixFold(s, prefix string) string {
+	if len(s) >= len(prefix) && strings.EqualFold(s[:len(prefix)], prefix) {
+		return s[len(prefix):]
+	}
+	return s
 }

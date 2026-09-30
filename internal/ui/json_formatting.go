@@ -24,7 +24,7 @@ func (m Model) formatResponseBody(body string) string {
 var stringLiteralRegex = regexp.MustCompile(`"(?:[^"\\]|\\.)*"`)
 
 var (
-	numberRegex = regexp.MustCompile(`-?\d+\.?\d*`)
+	numberRegex = regexp.MustCompile(`-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?`)
 	trueRegex   = regexp.MustCompile(`\btrue\b`)
 	falseRegex  = regexp.MustCompile(`\bfalse\b`)
 	nullRegex   = regexp.MustCompile(`\bnull\b`)

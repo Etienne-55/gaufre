@@ -50,6 +50,13 @@ func describeJSONError(body string, err error) string {
 	switch {
 	case errors.As(err, &syntaxErr):
 		offset = syntaxErr.Offset
+		// The offset counts the byte that broke the parse, so that byte is
+		// the one before it - unless the body just ended early, where the
+		// offset already sits past the end. It used to report one column
+		// too far.
+		if offset > 0 && !strings.HasPrefix(syntaxErr.Error(), "unexpected end") {
+			offset--
+		}
 	case errors.As(err, &typeErr):
 		offset = typeErr.Offset
 	}

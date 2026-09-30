@@ -56,7 +56,7 @@ func (m Model) renderBodyStatus(width int) string {
 	if lipgloss.Width(combined) <= width {
 		return combined
 	}
-	return truncateStyled(state, width)
+	return truncateString(state, width)
 }
 
 func (m Model) renderAuthscreen() string {
@@ -146,13 +146,4 @@ func (m Model) renderAuthStatus(width int) string {
 		return EditorMetaStyle.Render("0 characters")
 	}
 	return EditorMetaStyle.Render(fmt.Sprintf("%d characters", len(token)))
-}
-
-// truncateStyled trims already-styled content to width, falling back to the
-// raw string when it already fits.
-func truncateStyled(s string, width int) string {
-	if lipgloss.Width(s) <= width {
-		return s
-	}
-	return truncateString(s, width)
 }

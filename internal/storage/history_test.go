@@ -62,7 +62,7 @@ func TestSaveAndLoadHistory_Roundtrip(t *testing.T) {
 func TestSaveHistory_TruncatesToMax(t *testing.T) {
 	tempHome(t)
 
-	items := make([]types.HistoryItem, maxHistoryItems+10)
+	items := make([]types.HistoryItem, MaxHistoryItems+10)
 	for i := range items {
 		items[i] = types.HistoryItem{Method: "GET", URL: "http://example.com"}
 	}
@@ -75,8 +75,8 @@ func TestSaveHistory_TruncatesToMax(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadHistory: %v", err)
 	}
-	if len(got) != maxHistoryItems {
-		t.Fatalf("len(got) = %d, want %d", len(got), maxHistoryItems)
+	if len(got) != MaxHistoryItems {
+		t.Fatalf("len(got) = %d, want %d", len(got), MaxHistoryItems)
 	}
 }
 

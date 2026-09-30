@@ -5,6 +5,7 @@ import (
 	nethttp "net/http"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
@@ -48,9 +49,9 @@ func (m Model) renderResponseContent(width int) string {
 
 	var content string
 	if resp.Error != nil {
-		content = ErrorStyle.Render(fmt.Sprintf("Error: %v", resp.Error))
+		content = ErrorStyle.Render("Error: " + sanitizeForTerminal(resp.Error.Error()))
 	} else {
-		content = m.formatResponseBody(resp.Body)
+		content = m.formatResponseBody(sanitizeForTerminal(resp.Body))
 		if strings.TrimSpace(resp.Body) == "" {
 			content = EditorMetaStyle.Render("(empty body)")
 		}
@@ -60,6 +61,32 @@ func (m Model) renderResponseContent(width int) string {
 	}
 
 	return wrapHanging(content, width)
+}
+
+// sanitizeForTerminal makes text from the server safe to draw. Escape
+// sequences in a response used to reach the terminal as-is, free to clear
+// the screen, retitle the window or write the clipboard (OSC 52); control
+// characters now show as U+FFFD. Tabs are expanded, since they are measured
+// as zero width but drawn four columns wide, and the carriage returns of
+// CRLF line endings are dropped.
+func sanitizeForTerminal(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		switch {
+		case r == '\n':
+			b.WriteRune(r)
+		case r == '\t':
+			b.WriteString("    ")
+		case r == '\r':
+			// dropped
+		case unicode.IsControl(r):
+			b.WriteRune(unicode.ReplacementChar)
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 // wrapHanging wraps each line to width, continuing it two columns in from
@@ -97,7 +124,8 @@ func renderResponseHeaders(headers map[string][]string) string {
 	var lines []string
 	for _, name := range sortedKeys(headers) {
 		for _, value := range headers[name] {
-			lines = append(lines, keyStyle.Render(name+":")+" "+EditorValueStyle.Render(value))
+			lines = append(lines, keyStyle.Render(sanitizeForTerminal(name)+":")+" "+
+				EditorValueStyle.Render(sanitizeForTerminal(value)))
 		}
 	}
 	return strings.Join(lines, "\n")
@@ -152,7 +180,7 @@ func (m Model) renderResponseHeader(width int) string {
 		right = EditorMetaStyle.Render(fmt.Sprintf("%d–%d of %d", first, last, total))
 	}
 
-	left = truncateStyled(left, width-lipgloss.Width(right)-1)
+	left = truncateString(left, width-lipgloss.Width(right)-1)
 	gap := maxInt(width-lipgloss.Width(left)-lipgloss.Width(right), 1)
 	return left + strings.Repeat(" ", gap) + right
 }
@@ -222,7 +250,7 @@ func mediaType(headers map[string][]string) string {
 		return ""
 	}
 	mediaType, _, _ := strings.Cut(values[0], ";")
-	return strings.TrimSpace(mediaType)
+	return sanitizeForTerminal(strings.TrimSpace(mediaType))
 }
 
 func formatBytes(n int) string {

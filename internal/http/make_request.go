@@ -11,7 +11,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// ResponseMsg reports a finished request along with what was sent: the
+// method, URL and body on screen may have changed while it was in flight,
+// so they can't be read back from the UI when it lands.
 type ResponseMsg struct {
+	Method   string
+	URL      string
+	Payload  string
 	Response *types.Response
 }
 
@@ -25,7 +31,12 @@ var client = &http.Client{
 // background and reports the outcome as a ResponseMsg.
 func MakeRequest(method string, url string, payload string, authToken string) tea.Cmd {
 	return func() tea.Msg {
-		return ResponseMsg{Response: Do(method, url, payload, authToken)}
+		return ResponseMsg{
+			Method:   method,
+			URL:      url,
+			Payload:  payload,
+			Response: Do(method, url, payload, authToken),
+		}
 	}
 }
 

@@ -74,9 +74,11 @@ func decodeJWTSegment(segment string) (map[string]any, error) {
 	return out, nil
 }
 
+// stringClaim reads a string claim, made safe to display: a token can come
+// from a response, and a claim is free to carry escape sequences.
 func stringClaim(claims map[string]any, name string) string {
 	if v, ok := claims[name].(string); ok {
-		return v
+		return sanitizeForTerminal(v)
 	}
 	return ""
 }
@@ -86,7 +88,7 @@ func stringClaim(claims map[string]any, name string) string {
 func audienceClaim(claims map[string]any) string {
 	switch v := claims["aud"].(type) {
 	case string:
-		return v
+		return sanitizeForTerminal(v)
 	case []any:
 		parts := make([]string, 0, len(v))
 		for _, item := range v {
@@ -94,7 +96,7 @@ func audienceClaim(claims map[string]any) string {
 				parts = append(parts, s)
 			}
 		}
-		return strings.Join(parts, ", ")
+		return sanitizeForTerminal(strings.Join(parts, ", "))
 	}
 	return ""
 }

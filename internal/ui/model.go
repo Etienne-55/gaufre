@@ -88,6 +88,12 @@ type Model struct {
 	HistoryList list.Model
 	Viewport    viewport.Model
 
+	// HistoryLoadErr is why the saved history couldn't be read at startup.
+	// The history is then not saved this session: a file that failed to
+	// parse (a hand edit gone wrong, say) used to be overwritten by the
+	// next response, losing every request in it.
+	HistoryLoadErr error
+
 	// ShowHeaders lists the response headers above the body. It is a
 	// preference, so it carries over from one response to the next.
 	ShowHeaders bool
@@ -121,6 +127,10 @@ func newPayloadArea() textarea.Model {
 	ta.ShowLineNumbers = true
 	ta.Prompt = ""
 	ta.CharLimit = 0
+	// Enter stops adding lines once the body reaches MaxHeight, and the
+	// default (99) is easily hit by a formatted body. It also sizes the
+	// line-number gutter, so it is set before the width.
+	ta.MaxHeight = 9999
 	ta.SetWidth(editorMinContentWidth)
 	ta.SetHeight(editorMinBodyHeight)
 
@@ -169,7 +179,8 @@ func NewModel() Model {
 	historyList.SetShowStatusBar(false)
 
 	history := []types.HistoryItem{}
-	if loaded, err := storage.LoadHistory(); err == nil {
+	loaded, loadErr := storage.LoadHistory()
+	if loadErr == nil {
 		history = loaded
 		items := make([]list.Item, len(history))
 		for i, h := range history {
@@ -184,15 +195,16 @@ func NewModel() Model {
 	helpModel.Styles.ShortSeparator = lipgloss.NewStyle().Foreground(ColorMuted)
 
 	return Model{
-		Screen:      ScreenMain,
-		MainFocus:   FocusMethod,
-		URLInput:    newURLInput(defaultURL),
-		PayloadArea: newPayloadArea(),
-		AuthInput:   newAuthInput(),
-		Help:        helpModel,
-		Spinner:     s,
-		History:     history,
-		HistoryList: historyList,
+		Screen:         ScreenMain,
+		MainFocus:      FocusMethod,
+		URLInput:       newURLInput(defaultURL),
+		PayloadArea:    newPayloadArea(),
+		AuthInput:      newAuthInput(),
+		Help:           helpModel,
+		Spinner:        s,
+		History:        history,
+		HistoryList:    historyList,
+		HistoryLoadErr: loadErr,
 	}
 }
 

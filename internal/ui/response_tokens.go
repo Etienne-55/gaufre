@@ -53,7 +53,7 @@ func findResponseTokens(resp *types.Response) []tokenCandidate {
 		if token == "" {
 			return
 		}
-		found = append(found, tokenCandidate{Source: source, Token: token, rank: rank})
+		found = append(found, tokenCandidate{Source: sanitizeForTerminal(source), Token: token, rank: rank})
 	}
 
 	var doc any
@@ -129,7 +129,8 @@ func tokenRank(key, value string) (int, bool) {
 	lower := strings.ToLower(key)
 	if (strings.Contains(lower, "token") || strings.Contains(lower, "jwt")) &&
 		!strings.HasSuffix(lower, "type") &&
-		len(value) >= minTokenishLength && !strings.ContainsAny(value, " \t\r\n") {
+		len(value) >= minTokenishLength && !strings.ContainsAny(value, " \t\r\n") &&
+		!strings.Contains(value, "://") { // "token_endpoint": "https://..."
 		return rankTokenish, true
 	}
 
@@ -137,9 +138,15 @@ func tokenRank(key, value string) (int, bool) {
 }
 
 // isTokenHeader reports whether a response header is one APIs use to hand
-// back a token directly.
+// back a token directly. Rate-limit headers only count tokens
+// (x-ratelimit-remaining-tokens: 149984, anthropic-ratelimit-tokens-reset,
+// ...), and used to be offered - and, alone, set - as the bearer token.
 func isTokenHeader(name string) bool {
 	lower := strings.ToLower(name)
+	if strings.Contains(lower, "tokens") || strings.Contains(lower, "ratelimit") ||
+		strings.Contains(lower, "rate-limit") {
+		return false
+	}
 	return lower == "authorization" || strings.Contains(lower, "token")
 }
 

@@ -10,7 +10,9 @@ import (
 )
 
 const historyFileName = "history.json"
-const maxHistoryItems = 100
+
+// MaxHistoryItems is how many requests the history keeps, newest first.
+const MaxHistoryItems = 100
 
 // legacyHistoryFileName is where the history used to live, loose in the
 // home directory. LoadHistory moves it into the config directory.
@@ -45,8 +47,8 @@ func SaveHistory(items []types.HistoryItem) error {
 		return err
 	}
 
-	if len(items) > maxHistoryItems {
-		items = items[:maxHistoryItems]
+	if len(items) > MaxHistoryItems {
+		items = items[:MaxHistoryItems]
 	}
 
 	data, err := json.MarshalIndent(items, "", "  ")
@@ -54,10 +56,36 @@ func SaveHistory(items []types.HistoryItem) error {
 		return err
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	// The history holds request bodies - login payloads, passwords and all -
+	// so it is kept private to the user.
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0644)
+	return writeFileAtomic(path, data)
+}
+
+// writeFileAtomic replaces path with data in one step: the data goes to a
+// temporary file next to it (created 0600) that is then renamed over it, so
+// a crash mid-write can't leave a truncated history behind.
+func writeFileAtomic(path string, data []byte) error {
+	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name()) // fails harmlessly once renamed
+
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), path)
 }
 
 func LoadHistory() ([]types.HistoryItem, error) {
@@ -100,7 +128,7 @@ func historyToLoad(path string) string {
 		return path
 	}
 
-	if os.MkdirAll(filepath.Dir(path), 0o755) == nil && os.Rename(legacy, path) == nil {
+	if os.MkdirAll(filepath.Dir(path), 0o700) == nil && os.Rename(legacy, path) == nil {
 		return path
 	}
 	return legacy

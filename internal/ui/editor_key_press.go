@@ -109,27 +109,36 @@ func (m Model) updateAuthEditor(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m, cmd := m.setStatus("paste failed: " + err.Error())
 				return m, cmd
 			}
+			return m.pasteToken(text)
 
-			token := cleanAuthToken(text)
-			if token == "" {
-				m, cmd := m.setStatus("clipboard held no usable token")
-				return m, cmd
-			}
-
-			m.AuthInput.SetValue(token)
-			// Show the start of the token: its head is what identifies it.
-			m.AuthInput.CursorStart()
-
-			status := "token pasted"
-			if _, isJWT := decodeJWT(token); isJWT {
-				status = "JWT pasted and decoded"
-			}
-			m, cmd := m.setStatus(status)
-			return m, cmd
+		case keyMsg.Paste:
+			// The terminal's own paste (Cmd+V, tmux) gets the same cleanup
+			// as ctrl+v; it used to go in raw, "Bearer " prefix and all.
+			return m.pasteToken(string(keyMsg.Runes))
 		}
 	}
 
 	var cmd tea.Cmd
 	m.AuthInput, cmd = m.AuthInput.Update(msg)
+	return m, cmd
+}
+
+// pasteToken replaces the token with the one found in pasted text.
+func (m Model) pasteToken(text string) (tea.Model, tea.Cmd) {
+	token := cleanAuthToken(text)
+	if token == "" {
+		m, cmd := m.setStatus("no usable token in the pasted text")
+		return m, cmd
+	}
+
+	m.AuthInput.SetValue(token)
+	// Show the start of the token: its head is what identifies it.
+	m.AuthInput.CursorStart()
+
+	status := "token pasted"
+	if _, isJWT := decodeJWT(token); isJWT {
+		status = "JWT pasted and decoded"
+	}
+	m, cmd := m.setStatus(status)
 	return m, cmd
 }

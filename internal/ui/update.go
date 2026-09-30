@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"time"
 
 	"gaufre/internal/http"
@@ -33,7 +34,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// A response can arrive after you've moved on to the history or an
 		// editor while it was in flight. Dispatching it by screen used to
 		// drop it there, leaving Loading stuck and every later send ignored.
-		return m.handleResponse(msg), nil
+		return m.handleResponse(msg)
+
+	case list.FilterMatchesMsg:
+		// The history's filter results come back as a message, and can land
+		// on any screen: a response re-filters the history from wherever
+		// you are.
+		var cmd tea.Cmd
+		m.HistoryList, cmd = m.HistoryList.Update(msg)
+		return m, cmd
 
 	case spinner.TickMsg:
 		// Likewise the spinner has to keep ticking off the main screen, but
@@ -67,39 +76,65 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // handleResponse records a finished request in the history and shows its
 // response, from whichever screen you were on.
-func (m Model) handleResponse(msg http.ResponseMsg) Model {
+func (m Model) handleResponse(msg http.ResponseMsg) (Model, tea.Cmd) {
 	m.Loading = false
 	m.Response = msg.Response
 	m.ResponseTokens = findResponseTokens(m.Response)
 	m.TokenCursor = 0
 
-	if m.Response != nil && m.Response.Error == nil {
-		histItem := types.HistoryItem{
-			Method:    Methods[m.SelectedMethod],
-			URL:       m.URLInput.Value(),
-			Payload:   m.PayloadArea.Value(),
-			Response:  m.Response.StatusCode,
-			Timestamp: time.Now(),
-		}
-		m.History = append([]types.HistoryItem{histItem}, m.History...)
-
-		storage.SaveHistory(m.History)
-		items := make([]list.Item, len(m.History))
-		for i, h := range m.History {
-			items[i] = h
-		}
-		m.HistoryList.SetItems(items)
-	}
-
 	m.PayloadArea.Blur()
 	m.AuthInput.Blur()
 	m.Status = ""
+
+	var cmd tea.Cmd
+	if m.Response != nil && m.Response.Error == nil {
+		// What was sent, not what is on screen now: you may have loaded
+		// another request from the history while this one was in flight.
+		m, cmd = m.recordHistory(types.HistoryItem{
+			Method:    msg.Method,
+			URL:       msg.URL,
+			Payload:   msg.Payload,
+			Response:  m.Response.StatusCode,
+			Timestamp: time.Now(),
+		})
+	}
 
 	width, height := m.responseViewportSize()
 	m.Viewport = viewport.New(width, height)
 	m.Viewport.SetContent(m.renderResponseContent(width))
 	m.Screen = ScreenResponse
-	return m
+	return m, cmd
+}
+
+// recordHistory puts a request at the top of the history and saves it,
+// reporting in the status line when it couldn't be saved.
+func (m Model) recordHistory(item types.HistoryItem) (Model, tea.Cmd) {
+	m.History = append([]types.HistoryItem{item}, m.History...)
+	if len(m.History) > storage.MaxHistoryItems {
+		m.History = m.History[:storage.MaxHistoryItems]
+	}
+
+	items := make([]list.Item, len(m.History))
+	for i, h := range m.History {
+		items[i] = h
+	}
+	// With a filter applied, SetItems empties the filtered list and returns
+	// the command that refills it. Dropping it left the history blank.
+	cmds := []tea.Cmd{m.HistoryList.SetItems(items)}
+
+	var err error
+	if m.HistoryLoadErr != nil {
+		err = fmt.Errorf("it couldn't be read at startup: %w", m.HistoryLoadErr)
+	} else {
+		err = storage.SaveHistory(m.History)
+	}
+	if err != nil {
+		var cmd tea.Cmd
+		m, cmd = m.setStatus("history not saved: " + err.Error())
+		cmds = append(cmds, cmd)
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m Model) handleWindowSize(msg tea.WindowSizeMsg) Model {

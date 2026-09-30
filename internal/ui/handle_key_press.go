@@ -75,23 +75,33 @@ func (m Model) handleMainKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // rather than by the textinput so a URL copied with a trailing newline, or
 // wrapped across lines, doesn't end up with spaces in it.
 func (m Model) updateURLInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if msg.String() == "ctrl+v" {
+	switch {
+	case msg.String() == "ctrl+v":
 		text, err := clipboard.ReadAll()
 		if err != nil {
 			return m, nil
 		}
-		text = strings.Join(strings.Fields(text), "")
+		return m.pasteURL(text), nil
 
-		value := []rune(m.URLInput.Value())
-		pos := m.URLInput.Position()
-		m.URLInput.SetValue(string(value[:pos]) + text + string(value[pos:]))
-		m.URLInput.SetCursor(pos + len([]rune(text)))
-		return m, nil
+	case msg.Paste:
+		// The terminal's own paste (Cmd+V, tmux) arrives as one key message.
+		return m.pasteURL(string(msg.Runes)), nil
 	}
 
 	var cmd tea.Cmd
 	m.URLInput, cmd = m.URLInput.Update(msg)
 	return m, cmd
+}
+
+// pasteURL inserts pasted text at the cursor, minus any whitespace.
+func (m Model) pasteURL(text string) Model {
+	text = strings.Join(strings.Fields(text), "")
+
+	value := []rune(m.URLInput.Value())
+	pos := m.URLInput.Position()
+	m.URLInput.SetValue(string(value[:pos]) + text + string(value[pos:]))
+	m.URLInput.SetCursor(pos + len([]rune(text)))
+	return m
 }
 
 // handleMainEnter opens the selected Body/Auth editor, or sends the request

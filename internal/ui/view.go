@@ -16,6 +16,12 @@ const (
 	urlMinWidth = 42
 	urlMaxWidth = 64
 
+	// Width of the URL field outside a tmux popup. Its box is then as wide
+	// as the widest help line, so the main box keeps master's near-square
+	// proportions - the field growing to urlMaxWidth stretched it into a
+	// wide band - and doesn't change width as the focus moves.
+	urlFramedWidth = 50
+
 	// Columns the main screen spends around the URL text: the main box's
 	// border and padding, the URL box's border and padding, the "URL: "
 	// prompt and the cursor.
@@ -163,13 +169,18 @@ func (m Model) renderURLInput() string {
 		Render(input.View())
 }
 
-// urlInputWidth sizes the URL field to the terminal, within bounds that
-// keep the main box in proportion with the logo.
+// urlInputWidth sizes the URL field. In a tmux popup it grows with the
+// terminal, within bounds that keep the main box in proportion with the
+// logo; otherwise it has a fixed width. Either way a narrow terminal
+// shrinks it to fit.
 func (m Model) urlInputWidth() int {
 	if m.Width <= 0 {
 		return urlMinWidth
 	}
-	preferred := clampInt(m.Width-48, urlMinWidth, urlMaxWidth)
+	preferred := urlFramedWidth
+	if m.Popup {
+		preferred = clampInt(m.Width-48, urlMinWidth, urlMaxWidth)
+	}
 	return maxInt(minInt(preferred, m.Width-urlChrome), 10)
 }
 
